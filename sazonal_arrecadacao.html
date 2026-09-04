@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Fiscal — Cabedelo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root{--bg:#0F1117;--sur:#161B27;--sur2:#1E2535;--bd:#2A3347;--tx:#E2E8F0;--mu:#64748B;
+  --gn:#22D3A5;--rd:#F87171;--bl:#60A5FA;--am:#FBBF24;--pu:#A78BFA;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'IBM Plex Sans',sans-serif}
+.mono{font-family:'IBM Plex Mono',monospace}
+header{background:linear-gradient(135deg,#1A3F7A,#0F2347);padding:1.5rem 2.5rem;border-bottom:1px solid var(--bd)}
+header h1{font-size:1.3rem;font-weight:600;color:#fff}
+header p{color:rgba(255,255,255,.4);font-size:.78rem;margin-top:.2rem}
+.ci{font-size:.7rem;color:var(--mu);margin-top:.35rem}
+.nav{display:flex;gap:.2rem;padding:.7rem 2.5rem;border-bottom:1px solid var(--bd);background:var(--sur);position:sticky;top:0;z-index:100;flex-wrap:wrap}
+.nav button{background:transparent;border:1px solid transparent;color:var(--mu);padding:.35rem .85rem;border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s}
+.nav button:hover{color:var(--tx);background:var(--sur2)}
+.nav button.on{color:var(--bl);border-color:var(--bl);background:rgba(96,165,250,.08)}
+.page{display:none;padding:1.5rem 2.5rem}.page.on{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.4rem}
+.card{background:var(--sur);border:1px solid var(--bd);border-radius:10px;padding:.9rem 1rem}
+.card-label{font-size:.66rem;color:var(--mu);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.28rem}
+.card-value{font-size:1.3rem;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.card-sub{font-size:.7rem;color:var(--mu);margin-top:.18rem}
+.panel{background:var(--sur);border:1px solid var(--bd);border-radius:12px;padding:1.25rem;margin-bottom:1.25rem}
+.ph{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;margin-bottom:.9rem}
+.ph h3{font-size:.84rem;font-weight:600}
+select{background:var(--sur2);border:1px solid var(--bd);color:var(--tx);padding:.3rem .6rem;border-radius:5px;font-family:'IBM Plex Sans',sans-serif;font-size:.76rem;cursor:pointer;outline:none}
+.hm-wrap{overflow-x:auto}
+.hm{border-collapse:collapse;width:100%;min-width:640px}
+.hm th{font-size:.66rem;font-weight:500;color:var(--mu);padding:.4rem .42rem;text-align:center}
+.hm td{padding:.38rem .4rem;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:.72rem;border:1px solid var(--bd);min-width:60px}
+.hm .rl{font-size:.72rem;font-weight:500;text-align:left;white-space:nowrap;padding:.38rem .5rem;color:var(--tx)}
+.tbl{width:100%;border-collapse:collapse;font-size:.78rem}
+.tbl th{font-size:.65rem;font-weight:600;color:var(--mu);letter-spacing:.06em;text-transform:uppercase;padding:.5rem .68rem;border-bottom:1px solid var(--bd);text-align:right}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:.55rem .68rem;border-bottom:1px solid rgba(255,255,255,.04);text-align:right}
+.tbl td:first-child{text-align:left;font-weight:500}
+.badge{display:inline-block;font-size:.65rem;font-weight:600;padding:.15rem .48rem;border-radius:4px}
+.gtabs{display:flex;gap:.2rem;margin-bottom:.9rem;flex-wrap:wrap}
+.gtab{background:var(--sur2);border:1px solid var(--bd);color:var(--mu);padding:.28rem .7rem;border-radius:5px;font-size:.76rem;cursor:pointer;transition:all .15s}
+.gtab:hover{color:var(--tx)}.gtab.on{color:var(--tx);border-color:var(--bl);background:rgba(96,165,250,.1)}
+.cw{position:relative;width:100%;height:290px}
+.cw-tall{position:relative;width:100%;height:360px}
+.cw-sm{position:relative;width:100%;height:220px}
+.leg{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:7px;font-size:.72rem;color:var(--mu)}
+.leg span{display:flex;align-items:center;gap:4px}
+.leg i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+.mat{border-collapse:collapse;font-size:.72rem;font-family:'IBM Plex Mono',monospace}
+.mat th{padding:.35rem .55rem;font-size:.65rem;font-weight:600;color:var(--mu);text-align:center;border:1px solid var(--bd)}
+.mat td{padding:.35rem .55rem;text-align:center;border:1px solid var(--bd);min-width:60px}
+.tag-proj{font-size:.65rem;color:var(--am);border:1px solid var(--am);padding:.1rem .4rem;border-radius:3px;margin-left:.4rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dashboard Fiscal — Arrecadação</h1>
+  <p>Prefeitura de Cabedelo · Série histórica desde 2020 · Sistema SIAT</p>
+  <div class="ci" id="ci"></div>
+</header>
+<nav class="nav">
+  <button class="on" onclick="pg(this,'p-resumo')">Resumo</button>
+  <button onclick="pg(this,'p-sazonal')">Sazonal</button>
+  <button onclick="pg(this,'p-comp')">Comparativo</button>
+  <button onclick="pg(this,'p-conc')">Concentração</button>
+  <button onclick="pg(this,'p-tend')">Tendência</button>
+  <button onclick="pg(this,'p-proj')">Projeção</button>
+  <button onclick="pg(this,'p-grupos')">Por Grupo</button>
+  <button onclick="pg(this,'p-estat')">Estatísticas ↗</button>
+</nav>
+
+<!-- RESUMO -->
+<div class="page on" id="p-resumo">
+  <div class="cards" id="cards-resumo"></div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="ph"><h3>Evolução anual</h3></div>
+      <div class="cw-tall"><canvas id="ch-anual"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h3>Composição por grupo (%)</h3></div>
+      <div class="cw-tall"><canvas id="ch-comp"></canvas></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Crescimento anual (%)</h3></div>
+    <div class="cw-sm"><canvas id="ch-cresc"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Variação nominal vs real (IPCA) — %</h3>
+      <span style="font-size:.72rem;color:var(--mu)">* ano parcial</span>
+    </div>
+    <div class="cw-sm"><canvas id="ch-real-nom"></canvas></div>
+  </div>
+</div>
+
+<!-- SAZONAL -->
+<div class="page" id="p-sazonal">
+  <div class="panel">
+    <div class="ph"><h3>Heatmap mensal por ano (R$ mil)</h3></div>
+    <div class="hm-wrap" id="hm-total"></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <h3>Linha histórica</h3>
+      <select id="sel-ano-saz" onchange="renderLinhaSaz()">
+        <option value="todos">Todo o período</option>
+      </select>
+      <span style="font-size:.76rem;color:var(--mu)">vs média histórica</span>
+    </div>
+    <div class="leg" id="leg-saz"></div>
+    <div class="cw"><canvas id="ch-saz"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <h3>Diagnóstico z-score</h3>
+      <select id="sel-diag-saz" onchange="renderDiagSaz()"></select>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Mês</th><th>Valor</th><th>Média hist.</th><th>Desvio</th><th>Faixa normal</th><th>Z-score</th><th>Status</th></tr></thead>
+      <tbody id="tb-saz"></tbody>
+    </table>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Índice sazonal — peso de cada mês no ano (%)</h3></div>
+    <div class="cw-sm"><canvas id="ch-idx"></canvas></div>
+  </div>
+</div>
+
+<!-- COMPARATIVO -->
+<div class="page" id="p-comp">
+  <div class="panel">
+    <div class="ph">
+      <h3>Comparar dois anos</h3>
+      <select id="sel-ca" onchange="renderComp()"></select>
+      <span style="color:var(--mu);font-size:.78rem">vs</span>
+      <select id="sel-cb" onchange="renderComp()"></select>
+    </div>
+    <div class="cards" id="cards-comp"></div>
+    <div class="cw"><canvas id="ch-comp-bar"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Matriz de variação entre todos os anos (%)</h3>
+      <span style="font-size:.72rem;color:var(--mu)">linha = base · coluna = comparado</span>
+    </div>
+    <div class="hm-wrap" id="mat-var"></div>
+  </div>
+</div>
+
+<!-- CONCENTRAÇÃO -->
+<div class="page" id="p-conc">
+  <div class="panel">
+    <div class="ph"><h3>Participação % de cada grupo por ano</h3></div>
+    <div class="cw-tall"><canvas id="ch-conc-stack"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <h3>Evolução de um grupo ao longo dos anos</h3>
+      <select id="sel-conc-g" onchange="renderConcLinha()"></select>
+    </div>
+    <div class="cw-sm"><canvas id="ch-conc-linha"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Participação % de todos os grupos — comparação em linha</h3></div>
+    <div class="cw-tall"><canvas id="ch-conc-todos"></canvas></div>
+  </div>
+</div>
+
+<!-- TENDÊNCIA -->
+<div class="page" id="p-tend">
+  <div class="panel">
+    <div class="ph"><h3>Série mensal com linha de tendência linear</h3></div>
+    <div class="cw-tall"><canvas id="ch-tend"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Mediana móvel 12 meses</h3></div>
+    <div class="cw-sm"><canvas id="ch-media-mov"></canvas></div>
+  </div>
+</div>
+
+<!-- PROJEÇÃO -->
+<div class="page" id="p-proj">
+  <div class="cards" id="cards-proj"></div>
+  <div class="panel">
+    <div class="ph"><h3>Realizado vs Projeção sazonal <span class="tag-proj">estimativa</span></h3></div>
+    <div class="cw-tall"><canvas id="ch-proj"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph"><h3>Detalhamento mensal</h3></div>
+    <table class="tbl">
+      <thead><tr><th>Mês</th><th>Realizado</th><th>Projeção</th><th>Status</th></tr></thead>
+      <tbody id="tb-proj"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ESTATÍSTICAS AVANÇADAS -->
+<div class="page" id="p-estat">
+  <!-- Cards de resumo -->
+  <div class="cards" id="cards-estat"></div>
+
+  <!-- CV por grupo -->
+  <div class="grid2">
+    <div class="panel">
+      <div class="ph"><h3>Coeficiente de Variação por grupo (%)</h3>
+        <span style="font-size:.72rem;color:var(--mu)">CV = desvio/média dos totais anuais históricos — quanto maior, mais volátil</span>
+      </div>
+      <div class="cw"><canvas id="ch-cv-grupo"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><h3>CAGR por grupo (% a.a.) — anos completos</h3>
+        <span style="font-size:.72rem;color:var(--mu)">Crescimento anual composto de cada fonte de receita</span>
+      </div>
+      <div class="cw"><canvas id="ch-cagr-grupo"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HHI -->
+  <div class="panel">
+    <div class="ph"><h3>Índice HHI de Concentração — por ano</h3>
+      <span style="font-size:.72rem;color:var(--mu)">HHI &lt; 1.500 = diversificado · 1.500–2.500 = moderado · &gt; 2.500 = concentrado</span>
+    </div>
+    <div class="cw-sm"><canvas id="ch-hhi"></canvas></div>
+  </div>
+
+  <!-- Quebra estrutural -->
+  <div class="panel" id="panel-quebra">
+    <div class="ph"><h3>Quebra estrutural — ponto de maior mudança na arrecadação</h3></div>
+    <div id="quebra-insight" style="font-size:.82rem;color:var(--mu);margin-bottom:.9rem"></div>
+    <div class="grid2">
+      <div>
+        <div style="font-size:.75rem;color:var(--mu);margin-bottom:.5rem">Média anual antes vs depois do corte</div>
+        <div class="cw-sm"><canvas id="ch-quebra-bar"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:var(--mu);margin-bottom:.5rem">CV antes vs depois (volatilidade)</div>
+        <div class="cw-sm"><canvas id="ch-quebra-cv"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Box plot mensal -->
+  <div class="panel">
+    <div class="ph"><h3>Distribuição histórica por mês — Box Plot</h3>
+      <span style="font-size:.72rem;color:var(--mu)">Baseado nos anos históricos — mostra mediana, quartis e outliers de cada mês</span>
+    </div>
+    <div style="width:100%;height:340px"><canvas id="ch-box-mensal"></canvas></div>
+    <div style="margin-top:.7rem;font-size:.72rem;color:var(--mu)">
+      <span style="margin-right:1rem">▬ Mediana</span>
+      <span style="margin-right:1rem">█ IQR (Q1–Q3)</span>
+      <span>● Outliers</span>
+    </div>
+  </div>
+
+  <!-- Skewness por grupo -->
+  <div class="panel">
+    <div class="ph"><h3>Assimetria (Skewness) mensal por grupo</h3>
+      <span style="font-size:.72rem;color:var(--mu)">Calculado sobre os valores mensais históricos — |skew| &lt; 0.5 = simétrico · &gt; 1 = assimétrico</span>
+    </div>
+    <div class="cw-sm"><canvas id="ch-skew-grupo"></canvas></div>
+  </div>
+</div>
+
+<!-- GRUPOS -->
+<div class="page" id="p-grupos">
+  <div class="gtabs" id="gtabs"></div>
+  <div class="panel">
+    <div class="ph"><h3 id="g-titulo">Heatmap (R$ mil)</h3></div>
+    <div class="hm-wrap" id="hm-grupo"></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <h3>Linha histórica</h3>
+      <select id="sel-ano-g" onchange="renderLinhaG()">
+        <option value="todos">Todo o período</option>
+      </select>
+    </div>
+    <div class="leg" id="leg-g"></div>
+    <div class="cw"><canvas id="ch-g-linha"></canvas></div>
+  </div>
+  <div class="panel">
+    <div class="ph">
+      <h3>Diagnóstico z-score</h3>
+      <select id="sel-diag-g" onchange="renderDiagG()"></select>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Mês</th><th>Valor</th><th>Média hist.</th><th>Desvio</th><th>Z-score</th><th>Status</th></tr></thead>
+      <tbody id="tb-g"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const D={"anos": [2020, 2021, 2022, 2023, 2024, 2025, 2026], "ano_atual": 2026, "meses": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"], "totais_anuais": {"2020": 51380390, "2021": 74754761, "2022": 81410529, "2023": 105266885, "2024": 109068541, "2025": 125703034, "2026": 94270433}, "comp": {"2020": {"total": 51380390, "total_real": 51380390, "var_pct": null, "var_real": null, "ipca": 4.52}, "2021": {"total": 74754761, "total_real": 67921825, "var_pct": 45.5, "var_real": 32.2, "ipca": 10.06}, "2022": {"total": 81410529, "total_real": 69920810, "var_pct": 8.9, "var_real": 2.9, "ipca": 5.79}, "2023": {"total": 105266885, "total_real": 86417745, "var_pct": 29.3, "var_real": 23.6, "ipca": 4.62}, "2024": {"total": 109068541, "total_real": 85413216, "var_pct": 3.6, "var_real": -1.2, "ipca": 4.83}, "2025": {"total": 125703034, "total_real": 94417742, "var_pct": 15.3, "var_real": 10.5, "ipca": 4.26}, "2026": {"total": 94270433, "total_real": 68453371, "var_pct": 1.9, "var_real": -27.5, "ipca": 3.44}}, "cagr_nom": 19.59, "cagr_real": 12.94, "n_meses_at": 9, "totais_reais": {"2020": 51380390, "2021": 67921825, "2022": 69920810, "2023": 86417745, "2024": 85413216, "2025": 94417742, "2026": 68453371}, "defl": {"2020": 1.0, "2021": 1.1006, "2022": 1.1643, "2023": 1.2181, "2024": 1.277, "2025": 1.3313, "2026": 1.3771}, "ipca_anual": {"2020": 4.52, "2021": 10.06, "2022": 5.79, "2023": 4.62, "2024": 4.83, "2025": 4.26, "2026": 3.44}, "idx_saz": {"1": 7.7, "2": 9.17, "3": 14.04, "4": 8.69, "5": 7.05, "6": 6.57, "7": 7.36, "8": 7.21, "9": 8.2, "10": 8.06, "11": 7.7, "12": 8.26}, "conc": {"2020": {"ISS": 38.3, "ITBI": 27.2, "IPTU": 13.3, "DÍVIDA ATIVA": 9.5, "TAXAS": 6.6, "MULTA E JUROS": 3.5, "OUTRAS RECEITAS": 1.7}, "2021": {"ISS": 35.4, "ITBI": 36.5, "IPTU": 10.6, "DÍVIDA ATIVA": 8.2, "TAXAS": 6.0, "MULTA E JUROS": 2.2, "OUTRAS RECEITAS": 1.1}, "2022": {"ISS": 41.5, "ITBI": 31.3, "IPTU": 11.5, "DÍVIDA ATIVA": 6.4, "TAXAS": 6.5, "MULTA E JUROS": 2.0, "OUTRAS RECEITAS": 0.8}, "2023": {"ISS": 43.5, "ITBI": 31.4, "IPTU": 11.2, "DÍVIDA ATIVA": 5.6, "TAXAS": 5.4, "MULTA E JUROS": 1.9, "OUTRAS RECEITAS": 0.9}, "2024": {"ISS": 41.2, "ITBI": 31.3, "IPTU": 13.2, "DÍVIDA ATIVA": 5.8, "TAXAS": 5.3, "MULTA E JUROS": 2.1, "OUTRAS RECEITAS": 1.1}, "2025": {"ISS": 42.7, "ITBI": 28.9, "IPTU": 9.5, "DÍVIDA ATIVA": 8.6, "TAXAS": 5.4, "MULTA E JUROS": 3.6, "OUTRAS RECEITAS": 1.3}, "2026": {"ISS": 37.3, "ITBI": 32.0, "IPTU": 13.1, "DÍVIDA ATIVA": 7.7, "TAXAS": 5.4, "MULTA E JUROS": 3.5, "OUTRAS RECEITAS": 1.1}}, "serie_total": {"1": {"2020": 4574936, "2021": 6714065, "2022": 6562980, "2023": 8217425, "2024": 8018269, "2025": 8094501, "2026": 9964833}, "2": {"2020": 9042074, "2021": 8072972, "2022": 5950952, "2023": 6567867, "2024": 8805914, "2025": 11764612, "2026": 8314333}, "3": {"2020": 3922898, "2021": 9729471, "2022": 14259719, "2023": 18831447, "2024": 12294988, "2025": 17817239, "2026": 9698999}, "4": {"2020": 2410369, "2021": 6239117, "2022": 6297814, "2023": 8030337, "2024": 15025918, "2025": 9567786, "2026": 9163102}, "5": {"2020": 2642113, "2021": 5050270, "2022": 6143275, "2023": 8145207, "2024": 8427866, "2025": 8211554, "2026": 12031763}, "6": {"2020": 3127191, "2021": 4832449, "2022": 5290936, "2023": 7373457, "2024": 7634561, "2025": 7693331, "2026": 20314239}, "7": {"2020": 3682666, "2021": 5037882, "2022": 5692567, "2023": 8130673, "2024": 8671998, "2025": 9077342, "2026": 14065688}, "8": {"2020": 3912091, "2021": 4916870, "2022": 5592430, "2023": 8397236, "2024": 7691868, "2025": 8986401, "2026": 10211585}, "9": {"2020": 4693029, "2021": 6592177, "2022": 5596602, "2023": 8202140, "2024": 8551039, "2025": 11259047, "2026": 505890}, "10": {"2020": 4950290, "2021": 5977052, "2022": 6398143, "2023": 7517349, "2024": 8284432, "2025": 11015516, "2026": null}, "11": {"2020": 4102392, "2021": 5745429, "2022": 6498111, "2023": 7314038, "2024": 7439357, "2025": 11052566, "2026": null}, "12": {"2020": 4320341, "2021": 5847008, "2022": 7127000, "2023": 8539708, "2024": 8222331, "2025": 11163139, "2026": null}}, "stats_total": {"1": {"mu": 7030363, "sigma": 1404641, "lower": 4221081, "upper": 9839644, "por_ano": {"2020": 4574936, "2021": 6714065, "2022": 6562980, "2023": 8217425, "2024": 8018269, "2025": 8094501, "2026": 9964833}}, "2": {"mu": 8367398, "sigma": 2066531, "lower": 4234336, "upper": 12500461, "por_ano": {"2020": 9042074, "2021": 8072972, "2022": 5950952, "2023": 6567867, "2024": 8805914, "2025": 11764612, "2026": 8314333}}, "3": {"mu": 12809294, "sigma": 5516655, "lower": 1775983, "upper": 23842604, "por_ano": {"2020": 3922898, "2021": 9729471, "2022": 14259719, "2023": 18831447, "2024": 12294988, "2025": 17817239, "2026": 9698999}}, "4": {"mu": 7928557, "sigma": 4219808, "lower": 0, "upper": 16368173, "por_ano": {"2020": 2410369, "2021": 6239117, "2022": 6297814, "2023": 8030337, "2024": 15025918, "2025": 9567786, "2026": 9163102}}, "5": {"mu": 6436714, "sigma": 2299610, "lower": 1837495, "upper": 11035934, "por_ano": {"2020": 2642113, "2021": 5050270, "2022": 6143275, "2023": 8145207, "2024": 8427866, "2025": 8211554, "2026": 12031763}}, "6": {"mu": 5991987, "sigma": 1873186, "lower": 2245615, "upper": 9738360, "por_ano": {"2020": 3127191, "2021": 4832449, "2022": 5290936, "2023": 7373457, "2024": 7634561, "2025": 7693331, "2026": 20314239}}, "7": {"mu": 6715521, "sigma": 2212138, "lower": 2291245, "upper": 11139797, "por_ano": {"2020": 3682666, "2021": 5037882, "2022": 5692567, "2023": 8130673, "2024": 8671998, "2025": 9077342, "2026": 14065688}}, "8": {"mu": 6582816, "sigma": 2058560, "lower": 2465695, "upper": 10699937, "por_ano": {"2020": 3912091, "2021": 4916870, "2022": 5592430, "2023": 8397236, "2024": 7691868, "2025": 8986401, "2026": 10211585}}, "9": {"mu": 7482339, "sigma": 2368645, "lower": 2745048, "upper": 12219630, "por_ano": {"2020": 4693029, "2021": 6592177, "2022": 5596602, "2023": 8202140, "2024": 8551039, "2025": 11259047, "2026": 505890}}, "10": {"mu": 7357130, "sigma": 2139462, "lower": 3078206, "upper": 11636055, "por_ano": {"2020": 4950290, "2021": 5977052, "2022": 6398143, "2023": 7517349, "2024": 8284432, "2025": 11015516, "2026": null}}, "11": {"mu": 7025316, "sigma": 2320908, "lower": 2383499, "upper": 11667132, "por_ano": {"2020": 4102392, "2021": 5745429, "2022": 6498111, "2023": 7314038, "2024": 7439357, "2025": 11052566, "2026": null}}, "12": {"mu": 7536588, "sigma": 2366223, "lower": 2804142, "upper": 12269034, "por_ano": {"2020": 4320341, "2021": 5847008, "2022": 7127000, "2023": 8539708, "2024": 8222331, "2025": 11163139, "2026": null}}}, "serie_flat": [4574936, 9042074, 3922898, 2410369, 2642113, 3127191, 3682666, 3912091, 4693029, 4950290, 4102392, 4320341, 6714065, 8072972, 9729471, 6239117, 5050270, 4832449, 5037882, 4916870, 6592177, 5977052, 5745429, 5847008, 6562980, 5950952, 14259719, 6297814, 6143275, 5290936, 5692567, 5592430, 5596602, 6398143, 6498111, 7127000, 8217425, 6567867, 18831447, 8030337, 8145207, 7373457, 8130673, 8397236, 8202140, 7517349, 7314038, 8539708, 8018269, 8805914, 12294988, 15025918, 8427866, 7634561, 8671998, 7691868, 8551039, 8284432, 7439357, 8222331, 8094501, 11764612, 17817239, 9567786, 8211554, 7693331, 9077342, 8986401, 11259047, 11015516, 11052566, 11163139, 9964833, 8314333, 9698999, 9163102, 12031763, 20314239, 14065688, 10211585, 505890, 0, 0, 0], "trend_line": [5281633, 5338488, 5395343, 5452198, 5509054, 5565909, 5622764, 5679619, 5736475, 5793330, 5850185, 5907040, 5963896, 6020751, 6077606, 6134461, 6191317, 6248172, 6305027, 6361882, 6418738, 6475593, 6532448, 6589304, 6646159, 6703014, 6759869, 6816725, 6873580, 6930435, 6987290, 7044146, 7101001, 7157856, 7214711, 7271567, 7328422, 7385277, 7442132, 7498988, 7555843, 7612698, 7669553, 7726409, 7783264, 7840119, 7896975, 7953830, 8010685, 8067540, 8124396, 8181251, 8238106, 8294961, 8351817, 8408672, 8465527, 8522382, 8579238, 8636093, 8692948, 8749803, 8806659, 8863514, 8920369, 8977224, 9034080, 9090935, 9147790, 9204646, 9261501, 9318356, 9375211, 9432067, 9488922, 9545777, 9602632, 9659488, 9716343, 9773198, 9830053, 9886909, 9943764, 10000619], "labels_flat": ["Jan/20", "Fev/20", "Mar/20", "Abr/20", "Mai/20", "Jun/20", "Jul/20", "Ago/20", "Set/20", "Out/20", "Nov/20", "Dez/20", "Jan/21", "Fev/21", "Mar/21", "Abr/21", "Mai/21", "Jun/21", "Jul/21", "Ago/21", "Set/21", "Out/21", "Nov/21", "Dez/21", "Jan/22", "Fev/22", "Mar/22", "Abr/22", "Mai/22", "Jun/22", "Jul/22", "Ago/22", "Set/22", "Out/22", "Nov/22", "Dez/22", "Jan/23", "Fev/23", "Mar/23", "Abr/23", "Mai/23", "Jun/23", "Jul/23", "Ago/23", "Set/23", "Out/23", "Nov/23", "Dez/23", "Jan/24", "Fev/24", "Mar/24", "Abr/24", "Mai/24", "Jun/24", "Jul/24", "Ago/24", "Set/24", "Out/24", "Nov/24", "Dez/24", "Jan/25", "Fev/25", "Mar/25", "Abr/25", "Mai/25", "Jun/25", "Jul/25", "Ago/25", "Set/25", "Out/25", "Nov/25", "Dez/25", "Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26", "Out/26", "Nov/26", "Dez/26"], "proj_anual": 124056367, "total_realizado": 94270433, "meses_reais": [1, 2, 3, 4, 5, 6, 7, 8, 9], "proj_mes": {"1": 9964833, "2": 8314333, "3": 9698999, "4": 9163102, "5": 12031763, "6": 20314239, "7": 14065688, "8": 10211585, "9": 505890, "10": 9998943, "11": 9552340, "12": 10247056}, "grupos": {"ISS": {"serie": {"1": {"2020": 2174773, "2021": 1731498, "2022": 2771864, "2023": 4867322, "2024": 3727636, "2025": 4352702, "2026": 4903093}, "2": {"2020": 1936106, "2021": 1640531, "2022": 2778850, "2023": 3116774, "2024": 3264242, "2025": 4887126, "2026": 4002380}, "3": {"2020": 1850405, "2021": 2117639, "2022": 2743691, "2023": 4430641, "2024": 3878133, "2025": 3950155, "2026": 4462949}, "4": {"2020": 1306657, "2021": 2256013, "2022": 2654441, "2023": 3739111, "2024": 3639366, "2025": 4384911, "2026": 4723484}, "5": {"2020": 1256889, "2021": 2213518, "2022": 2798034, "2023": 3686440, "2024": 3716565, "2025": 4632740, "2026": 4278475}, "6": {"2020": 1337042, "2021": 1763360, "2022": 2615209, "2023": 3892906, "2024": 3917935, "2025": 4188344, "2026": 4340996}, "7": {"2020": 1432154, "2021": 2309574, "2022": 2782221, "2023": 3980481, "2024": 3745510, "2025": 4838148, "2026": 4527007}, "8": {"2020": 1579270, "2021": 2153359, "2022": 2752438, "2023": 3770277, "2024": 3628824, "2025": 4184805, "2026": 3876069}, "9": {"2020": 1779699, "2021": 2762896, "2022": 2661375, "2023": 3545040, "2024": 3872608, "2025": 4781941, "2026": 46383}, "10": {"2020": 1702507, "2021": 2546420, "2022": 2963737, "2023": 3593889, "2024": 3928772, "2025": 4621043, "2026": null}, "11": {"2020": 1622580, "2021": 2470228, "2022": 3039548, "2023": 3591858, "2024": 3893912, "2025": 4646435, "2026": null}, "12": {"2020": 1676281, "2021": 2486541, "2022": 3247953, "2023": 3600779, "2024": 3761701, "2025": 4245177, "2026": null}}, "stats": {"1": {"mu": 3270966, "sigma": 1244810, "lower": 781347, "upper": 5760585, "por_ano": {"2020": 2174773, "2021": 1731498, "2022": 2771864, "2023": 4867322, "2024": 3727636, "2025": 4352702, "2026": 4903093}}, "2": {"mu": 2937271, "sigma": 1153259, "lower": 630754, "upper": 5243789, "por_ano": {"2020": 1936106, "2021": 1640531, "2022": 2778850, "2023": 3116774, "2024": 3264242, "2025": 4887126, "2026": 4002380}}, "3": {"mu": 3161777, "sigma": 1070461, "lower": 1020855, "upper": 5302700, "por_ano": {"2020": 1850405, "2021": 2117639, "2022": 2743691, "2023": 4430641, "2024": 3878133, "2025": 3950155, "2026": 4462949}}, "4": {"mu": 2996750, "sigma": 1132548, "lower": 731653, "upper": 5261847, "por_ano": {"2020": 1306657, "2021": 2256013, "2022": 2654441, "2023": 3739111, "2024": 3639366, "2025": 4384911, "2026": 4723484}}, "5": {"mu": 3050698, "sigma": 1211021, "lower": 628655, "upper": 5472740, "por_ano": {"2020": 1256889, "2021": 2213518, "2022": 2798034, "2023": 3686440, "2024": 3716565, "2025": 4632740, "2026": 4278475}}, "6": {"mu": 2952466, "sigma": 1223214, "lower": 506038, "upper": 5398894, "por_ano": {"2020": 1337042, "2021": 1763360, "2022": 2615209, "2023": 3892906, "2024": 3917935, "2025": 4188344, "2026": 4340996}}, "7": {"mu": 3181348, "sigma": 1239423, "lower": 702501, "upper": 5660195, "por_ano": {"2020": 1432154, "2021": 2309574, "2022": 2782221, "2023": 3980481, "2024": 3745510, "2025": 4838148, "2026": 4527007}}, "8": {"mu": 3011495, "sigma": 1018654, "lower": 974188, "upper": 5048803, "por_ano": {"2020": 1579270, "2021": 2153359, "2022": 2752438, "2023": 3770277, "2024": 3628824, "2025": 4184805, "2026": 3876069}}, "9": {"mu": 3233927, "sigma": 1055037, "lower": 1123852, "upper": 5344001, "por_ano": {"2020": 1779699, "2021": 2762896, "2022": 2661375, "2023": 3545040, "2024": 3872608, "2025": 4781941, "2026": 46383}}, "10": {"mu": 3226061, "sigma": 1041827, "lower": 1142408, "upper": 5309715, "por_ano": {"2020": 1702507, "2021": 2546420, "2022": 2963737, "2023": 3593889, "2024": 3928772, "2025": 4621043, "2026": null}}, "11": {"mu": 3210760, "sigma": 1074533, "lower": 1061693, "upper": 5359827, "por_ano": {"2020": 1622580, "2021": 2470228, "2022": 3039548, "2023": 3591858, "2024": 3893912, "2025": 4646435, "2026": null}}, "12": {"mu": 3169739, "sigma": 937665, "lower": 1294409, "upper": 5045068, "por_ano": {"2020": 1676281, "2021": 2486541, "2022": 3247953, "2023": 3600779, "2024": 3761701, "2025": 4245177, "2026": null}}}, "totais_anuais": {"2020": 19654364, "2021": 26451578, "2022": 33809361, "2023": 45815518, "2024": 44975205, "2025": 53713528, "2026": 35160835}, "trend": [2012097, 2038076, 2064056, 2090035, 2116014, 2141994, 2167973, 2193953, 2219932, 2245912, 2271891, 2297870, 2323850, 2349829, 2375809, 2401788, 2427767, 2453747, 2479726, 2505706, 2531685, 2557665, 2583644, 2609623, 2635603, 2661582, 2687562, 2713541, 2739521, 2765500, 2791479, 2817459, 2843438, 2869418, 2895397, 2921376, 2947356, 2973335, 2999315, 3025294, 3051274, 3077253, 3103232, 3129212, 3155191, 3181171, 3207150, 3233130, 3259109, 3285088, 3311068, 3337047, 3363027, 3389006, 3414985, 3440965, 3466944, 3492924, 3518903, 3544883, 3570862, 3596841, 3622821, 3648800, 3674780, 3700759, 3726738, 3752718, 3778697, 3804677, 3830656, 3856636, 3882615, 3908594, 3934574, 3960553, 3986533, 4012512, 4038492, 4064471, 4090450, 4116430, 4142409, 4168389]}, "ITBI": {"serie": {"1": {"2020": 984024, "2021": 3395941, "2022": 2470114, "2023": 1787030, "2024": 2288705, "2025": 2162561, "2026": 3525022}, "2": {"2020": 721166, "2021": 2687726, "2022": 1705791, "2023": 1781700, "2024": 2556970, "2025": 4153534, "2026": 2634095}, "3": {"2020": 713634, "2021": 2126655, "2022": 1989059, "2023": 2981567, "2024": 2580792, "2025": 2700673, "2026": 3554381}, "4": {"2020": 499768, "2021": 2310537, "2022": 1754768, "2023": 2612092, "2024": 2544076, "2025": 2975883, "2026": 3133630}, "5": {"2020": 666633, "2021": 1507138, "2022": 1947625, "2023": 2771191, "2024": 2882673, "2025": 1986661, "2026": 3763489}, "6": {"2020": 737266, "2021": 1844106, "2022": 1694707, "2023": 2151906, "2024": 2327111, "2025": 1741755, "2026": 4417022}, "7": {"2020": 934939, "2021": 1705848, "2022": 1869478, "2023": 2575999, "2024": 3258381, "2025": 2245132, "2026": 4489497}, "8": {"2020": 1329022, "2021": 1779856, "2022": 1833525, "2023": 3195161, "2024": 2788848, "2025": 2701795, "2026": 4277772}, "9": {"2020": 1816485, "2021": 2741160, "2022": 2174650, "2023": 3760994, "2024": 3542593, "2025": 2490883, "2026": 355416}, "10": {"2020": 2153990, "2021": 2415766, "2022": 2631169, "2023": 2770426, "2024": 3190763, "2025": 4083616, "2026": null}, "11": {"2020": 1632522, "2021": 2331939, "2022": 2579950, "2023": 2689975, "2024": 2750366, "2025": 4408270, "2026": null}, "12": {"2020": 1780977, "2021": 2464743, "2022": 2831595, "2023": 3986791, "2024": 3390224, "2025": 4630248, "2026": null}}, "stats": {"1": {"mu": 2181396, "sigma": 794931, "lower": 591534, "upper": 3771257, "por_ano": {"2020": 984024, "2021": 3395941, "2022": 2470114, "2023": 1787030, "2024": 2288705, "2025": 2162561, "2026": 3525022}}, "2": {"mu": 2267815, "sigma": 1162770, "lower": 0, "upper": 4593355, "por_ano": {"2020": 721166, "2021": 2687726, "2022": 1705791, "2023": 1781700, "2024": 2556970, "2025": 4153534, "2026": 2634095}}, "3": {"mu": 2182063, "sigma": 807930, "lower": 566204, "upper": 3797923, "por_ano": {"2020": 713634, "2021": 2126655, "2022": 1989059, "2023": 2981567, "2024": 2580792, "2025": 2700673, "2026": 3554381}}, "4": {"mu": 2116187, "sigma": 888740, "lower": 338707, "upper": 3893667, "por_ano": {"2020": 499768, "2021": 2310537, "2022": 1754768, "2023": 2612092, "2024": 2544076, "2025": 2975883, "2026": 3133630}}, "5": {"mu": 1960320, "sigma": 823177, "lower": 313966, "upper": 3606674, "por_ano": {"2020": 666633, "2021": 1507138, "2022": 1947625, "2023": 2771191, "2024": 2882673, "2025": 1986661, "2026": 3763489}}, "6": {"mu": 1749475, "sigma": 553569, "lower": 642336, "upper": 2856614, "por_ano": {"2020": 737266, "2021": 1844106, "2022": 1694707, "2023": 2151906, "2024": 2327111, "2025": 1741755, "2026": 4417022}}, "7": {"mu": 2098296, "sigma": 794397, "lower": 509503, "upper": 3687090, "por_ano": {"2020": 934939, "2021": 1705848, "2022": 1869478, "2023": 2575999, "2024": 3258381, "2025": 2245132, "2026": 4489497}}, "8": {"mu": 2271368, "sigma": 724949, "lower": 821470, "upper": 3721266, "por_ano": {"2020": 1329022, "2021": 1779856, "2022": 1833525, "2023": 3195161, "2024": 2788848, "2025": 2701795, "2026": 4277772}}, "9": {"mu": 2754461, "sigma": 764185, "lower": 1226091, "upper": 4282830, "por_ano": {"2020": 1816485, "2021": 2741160, "2022": 2174650, "2023": 3760994, "2024": 3542593, "2025": 2490883, "2026": 355416}}, "10": {"mu": 2874288, "sigma": 687255, "lower": 1499779, "upper": 4248798, "por_ano": {"2020": 2153990, "2021": 2415766, "2022": 2631169, "2023": 2770426, "2024": 3190763, "2025": 4083616, "2026": null}}, "11": {"mu": 2732170, "sigma": 916952, "lower": 898266, "upper": 4566074, "por_ano": {"2020": 1632522, "2021": 2331939, "2022": 2579950, "2023": 2689975, "2024": 2750366, "2025": 4408270, "2026": null}}, "12": {"mu": 3180763, "sigma": 1038130, "lower": 1104503, "upper": 5257022, "por_ano": {"2020": 1780977, "2021": 2464743, "2022": 2831595, "2023": 3986791, "2024": 3390224, "2025": 4630248, "2026": null}}}, "totais_anuais": {"2020": 13970425, "2021": 27311414, "2022": 25482431, "2023": 33064832, "2024": 34101503, "2025": 36281011, "2026": 30150325}, "trend": [1608093, 1626820, 1645547, 1664274, 1683001, 1701728, 1720455, 1739182, 1757909, 1776636, 1795363, 1814090, 1832817, 1851544, 1870270, 1888997, 1907724, 1926451, 1945178, 1963905, 1982632, 2001359, 2020086, 2038813, 2057540, 2076267, 2094994, 2113721, 2132448, 2151175, 2169901, 2188628, 2207355, 2226082, 2244809, 2263536, 2282263, 2300990, 2319717, 2338444, 2357171, 2375898, 2394625, 2413352, 2432079, 2450805, 2469532, 2488259, 2506986, 2525713, 2544440, 2563167, 2581894, 2600621, 2619348, 2638075, 2656802, 2675529, 2694256, 2712983, 2731709, 2750436, 2769163, 2787890, 2806617, 2825344, 2844071, 2862798, 2881525, 2900252, 2918979, 2937706, 2956433, 2975160, 2993887, 3012614, 3031340, 3050067, 3068794, 3087521, 3106248, 3124975, 3143702, 3162429]}, "IPTU": {"serie": {"1": {"2020": 140758, "2021": 205694, "2022": 210737, "2023": 407364, "2024": 590365, "2025": 468196, "2026": null}, "2": {"2020": 4416632, "2021": 2301004, "2022": 493346, "2023": 599257, "2024": 1282484, "2025": 1149138, "2026": null}, "3": {"2020": 588709, "2021": 3635674, "2022": 6620372, "2023": 8206048, "2024": 3576905, "2025": 7724772, "2026": null}, "4": {"2020": 235988, "2021": 469937, "2022": 525980, "2023": 606277, "2024": 6391712, "2025": 624586, "2026": null}, "5": {"2020": 246955, "2021": 281558, "2022": 405733, "2023": 479295, "2024": 774435, "2025": 440041, "2026": 1911678}, "6": {"2020": 251381, "2021": 278392, "2022": 294123, "2023": 412576, "2024": 385819, "2025": 392445, "2026": 7645754}, "7": {"2020": 347399, "2021": 238756, "2022": 264879, "2023": 389106, "2024": 642620, "2025": 394760, "2026": 2278394}, "8": {"2020": 135408, "2021": 186326, "2022": 186525, "2023": 266817, "2024": 249343, "2025": 241440, "2026": 468008}, "9": {"2020": 144567, "2021": 103594, "2022": 97783, "2023": 92804, "2024": 141534, "2025": 166749, "2026": 31321}, "10": {"2020": 125695, "2021": 78265, "2022": 65393, "2023": 108631, "2024": 149351, "2025": 151750, "2026": null}, "11": {"2020": 86969, "2021": 81281, "2022": 67111, "2023": 107067, "2024": 99127, "2025": 76572, "2026": null}, "12": {"2020": 111780, "2021": 75673, "2022": 91060, "2023": 141583, "2024": 109701, "2025": 90846, "2026": null}}, "stats": {"1": {"mu": 337186, "sigma": 177793, "lower": 0, "upper": 692771, "por_ano": {"2020": 140758, "2021": 205694, "2022": 210737, "2023": 407364, "2024": 590365, "2025": 468196, "2026": null}}, "2": {"mu": 1706977, "sigma": 1475562, "lower": 0, "upper": 4658101, "por_ano": {"2020": 4416632, "2021": 2301004, "2022": 493346, "2023": 599257, "2024": 1282484, "2025": 1149138, "2026": null}}, "3": {"mu": 5058746, "sigma": 2954796, "lower": 0, "upper": 10968338, "por_ano": {"2020": 588709, "2021": 3635674, "2022": 6620372, "2023": 8206048, "2024": 3576905, "2025": 7724772, "2026": null}}, "4": {"mu": 1475747, "sigma": 2412380, "lower": 0, "upper": 6300506, "por_ano": {"2020": 235988, "2021": 469937, "2022": 525980, "2023": 606277, "2024": 6391712, "2025": 624586, "2026": null}}, "5": {"mu": 438003, "sigma": 188102, "lower": 61800, "upper": 814206, "por_ano": {"2020": 246955, "2021": 281558, "2022": 405733, "2023": 479295, "2024": 774435, "2025": 440041, "2026": 1911678}}, "6": {"mu": 335789, "sigma": 68941, "lower": 197907, "upper": 473671, "por_ano": {"2020": 251381, "2021": 278392, "2022": 294123, "2023": 412576, "2024": 385819, "2025": 392445, "2026": 7645754}}, "7": {"mu": 379587, "sigma": 143899, "lower": 91789, "upper": 667384, "por_ano": {"2020": 347399, "2021": 238756, "2022": 264879, "2023": 389106, "2024": 642620, "2025": 394760, "2026": 2278394}}, "8": {"mu": 210976, "sigma": 49868, "lower": 111240, "upper": 310713, "por_ano": {"2020": 135408, "2021": 186326, "2022": 186525, "2023": 266817, "2024": 249343, "2025": 241440, "2026": 468008}}, "9": {"mu": 124505, "sigma": 30441, "lower": 63624, "upper": 185387, "por_ano": {"2020": 144567, "2021": 103594, "2022": 97783, "2023": 92804, "2024": 141534, "2025": 166749, "2026": 31321}}, "10": {"mu": 113181, "sigma": 35989, "lower": 41203, "upper": 185158, "por_ano": {"2020": 125695, "2021": 78265, "2022": 65393, "2023": 108631, "2024": 149351, "2025": 151750, "2026": null}}, "11": {"mu": 86355, "sigma": 14726, "lower": 56903, "upper": 115807, "por_ano": {"2020": 86969, "2021": 81281, "2022": 67111, "2023": 107067, "2024": 99127, "2025": 76572, "2026": null}}, "12": {"mu": 103440, "sigma": 23007, "lower": 57427, "upper": 149454, "por_ano": {"2020": 111780, "2021": 75673, "2022": 91060, "2023": 141583, "2024": 109701, "2025": 90846, "2026": null}}}, "totais_anuais": {"2020": 6832241, "2021": 7936155, "2022": 9323042, "2023": 11816825, "2024": 14393395, "2025": 11921293, "2026": 12335155}, "trend": [742795, 746284, 749773, 753263, 756752, 760241, 763730, 767219, 770708, 774198, 777687, 781176, 784665, 788154, 791644, 795133, 798622, 802111, 805600, 809090, 812579, 816068, 819557, 823046, 826536, 830025, 833514, 837003, 840492, 843982, 847471, 850960, 854449, 857938, 861428, 864917, 868406, 871895, 875384, 878874, 882363, 885852, 889341, 892830, 896320, 899809, 903298, 906787, 910276, 913765, 917255, 920744, 924233, 927722, 931211, 934701, 938190, 941679, 945168, 948657, 952147, 955636, 959125, 962614, 966103, 969593, 973082, 976571, 980060, 983549, 987039, 990528, 994017, 997506, 1000995, 1004485, 1007974, 1011463, 1014952, 1018441, 1021931, 1025420, 1028909, 1032398]}, "DÍVIDA ATIVA": {"serie": {"1": {"2020": 793576, "2021": 952818, "2022": 487469, "2023": 563903, "2024": 704403, "2025": 476579, "2026": 971542}, "2": {"2020": 407729, "2021": 642788, "2022": 323940, "2023": 453010, "2024": 814900, "2025": 541986, "2026": 636427}, "3": {"2020": 339513, "2021": 559817, "2022": 781500, "2023": 691081, "2024": 709584, "2025": 794152, "2026": 916545}, "4": {"2020": 190337, "2021": 742787, "2022": 639769, "2023": 535093, "2024": 779550, "2025": 908350, "2026": 705702}, "5": {"2020": 250042, "2021": 444264, "2022": 484804, "2023": 661917, "2024": 466150, "2025": 612925, "2026": 979960}, "6": {"2020": 351438, "2021": 484291, "2022": 366234, "2023": 442667, "2024": 445901, "2025": 642816, "2026": 1131338}, "7": {"2020": 475980, "2021": 423256, "2022": 344102, "2023": 545117, "2024": 435559, "2025": 672351, "2026": 1164955}, "8": {"2020": 380277, "2021": 364292, "2022": 328939, "2023": 469897, "2024": 463571, "2025": 1038400, "2026": 770464}, "9": {"2020": 507452, "2021": 467850, "2022": 305194, "2023": 364823, "2024": 486444, "2025": 2347935, "2026": 21673}, "10": {"2020": 454678, "2021": 324591, "2022": 350083, "2023": 465155, "2024": 395665, "2025": 923928, "2026": null}, "11": {"2020": 367627, "2021": 388846, "2022": 351726, "2023": 410123, "2024": 292896, "2025": 711569, "2026": null}, "12": {"2020": 373815, "2021": 319875, "2022": 408041, "2023": 286633, "2024": 344159, "2025": 1153948, "2026": null}}, "stats": {"1": {"mu": 663125, "sigma": 188755, "lower": 285614, "upper": 1040635, "por_ano": {"2020": 793576, "2021": 952818, "2022": 487469, "2023": 563903, "2024": 704403, "2025": 476579, "2026": 971542}}, "2": {"mu": 530725, "sigma": 177408, "lower": 175909, "upper": 885541, "por_ano": {"2020": 407729, "2021": 642788, "2022": 323940, "2023": 453010, "2024": 814900, "2025": 541986, "2026": 636427}}, "3": {"mu": 645941, "sigma": 171899, "lower": 302143, "upper": 989739, "por_ano": {"2020": 339513, "2021": 559817, "2022": 781500, "2023": 691081, "2024": 709584, "2025": 794152, "2026": 916545}}, "4": {"mu": 632648, "sigma": 250970, "lower": 130709, "upper": 1134587, "por_ano": {"2020": 190337, "2021": 742787, "2022": 639769, "2023": 535093, "2024": 779550, "2025": 908350, "2026": 705702}}, "5": {"mu": 486684, "sigma": 144822, "lower": 197039, "upper": 776328, "por_ano": {"2020": 250042, "2021": 444264, "2022": 484804, "2023": 661917, "2024": 466150, "2025": 612925, "2026": 979960}}, "6": {"mu": 455558, "sigma": 104853, "lower": 245852, "upper": 665263, "por_ano": {"2020": 351438, "2021": 484291, "2022": 366234, "2023": 442667, "2024": 445901, "2025": 642816, "2026": 1131338}}, "7": {"mu": 482727, "sigma": 113907, "lower": 254914, "upper": 710541, "por_ano": {"2020": 475980, "2021": 423256, "2022": 344102, "2023": 545117, "2024": 435559, "2025": 672351, "2026": 1164955}}, "8": {"mu": 507563, "sigma": 265999, "lower": 0, "upper": 1039561, "por_ano": {"2020": 380277, "2021": 364292, "2022": 328939, "2023": 469897, "2024": 463571, "2025": 1038400, "2026": 770464}}, "9": {"mu": 746616, "sigma": 788345, "lower": 0, "upper": 2323307, "por_ano": {"2020": 507452, "2021": 467850, "2022": 305194, "2023": 364823, "2024": 486444, "2025": 2347935, "2026": 21673}}, "10": {"mu": 485683, "sigma": 221758, "lower": 42167, "upper": 929199, "por_ano": {"2020": 454678, "2021": 324591, "2022": 350083, "2023": 465155, "2024": 395665, "2025": 923928, "2026": null}}, "11": {"mu": 420464, "sigma": 148080, "lower": 124304, "upper": 716625, "por_ano": {"2020": 367627, "2021": 388846, "2022": 351726, "2023": 410123, "2024": 292896, "2025": 711569, "2026": null}}, "12": {"mu": 481078, "sigma": 332306, "lower": 0, "upper": 1145690, "por_ano": {"2020": 373815, "2021": 319875, "2022": 408041, "2023": 286633, "2024": 344159, "2025": 1153948, "2026": null}}}, "totais_anuais": {"2020": 4892464, "2021": 6115474, "2022": 5171802, "2023": 5889418, "2024": 6338781, "2025": 10824940, "2026": 7298607}, "trend": [394402, 398246, 402090, 405935, 409779, 413624, 417468, 421313, 425157, 429002, 432846, 436691, 440535, 444379, 448224, 452068, 455913, 459757, 463602, 467446, 471291, 475135, 478979, 482824, 486668, 490513, 494357, 498202, 502046, 505891, 509735, 513580, 517424, 521268, 525113, 528957, 532802, 536646, 540491, 544335, 548180, 552024, 555868, 559713, 563557, 567402, 571246, 575091, 578935, 582780, 586624, 590469, 594313, 598157, 602002, 605846, 609691, 613535, 617380, 621224, 625069, 628913, 632757, 636602, 640446, 644291, 648135, 651980, 655824, 659669, 663513, 667358, 671202, 675046, 678891, 682735, 686580, 690424, 694269, 698113, 701958, 705802, 709646, 713491]}, "TAXAS": {"serie": {"1": {"2020": 201238, "2021": 202473, "2022": 470731, "2023": 366305, "2024": 469547, "2025": 432970, "2026": 204976}, "2": {"2020": 1270664, "2021": 667075, "2022": 528868, "2023": 419314, "2024": 556047, "2025": 748241, "2026": 287409}, "3": {"2020": 289119, "2021": 1088085, "2022": 1801134, "2023": 2159253, "2024": 968951, "2025": 2305288, "2026": 278471}, "4": {"2020": 89738, "2021": 289408, "2022": 524175, "2023": 359742, "2024": 1329271, "2025": 427639, "2026": 232388}, "5": {"2020": 113495, "2021": 465847, "2022": 358035, "2023": 318280, "2024": 373736, "2025": 295485, "2026": 753950}, "6": {"2020": 219660, "2021": 271808, "2022": 188464, "2023": 268800, "2024": 313652, "2025": 223201, "2026": 1984892}, "7": {"2020": 232227, "2021": 189563, "2022": 230768, "2023": 339691, "2024": 328184, "2025": 487854, "2026": 939068}, "8": {"2020": 157870, "2021": 247485, "2022": 253156, "2023": 383346, "2024": 305205, "2025": 309933, "2026": 350127}, "9": {"2020": 153244, "2021": 280496, "2022": 189972, "2023": 207786, "2024": 281301, "2025": 418492, "2026": 32301}, "10": {"2020": 232618, "2021": 293874, "2022": 176619, "2023": 304910, "2024": 318099, "2025": 470042, "2026": null}, "11": {"2020": 238220, "2021": 222965, "2022": 270702, "2023": 272109, "2024": 202626, "2025": 263047, "2026": null}, "12": {"2020": 171844, "2021": 285861, "2022": 296829, "2023": 321510, "2024": 368234, "2025": 403720, "2026": null}}, "stats": {"1": {"mu": 357211, "sigma": 126174, "lower": 104862, "upper": 609559, "por_ano": {"2020": 201238, "2021": 202473, "2022": 470731, "2023": 366305, "2024": 469547, "2025": 432970, "2026": 204976}}, "2": {"mu": 698368, "sigma": 302604, "lower": 93160, "upper": 1303576, "por_ano": {"2020": 1270664, "2021": 667075, "2022": 528868, "2023": 419314, "2024": 556047, "2025": 748241, "2026": 287409}}, "3": {"mu": 1435305, "sigma": 783147, "lower": 0, "upper": 3001598, "por_ano": {"2020": 289119, "2021": 1088085, "2022": 1801134, "2023": 2159253, "2024": 968951, "2025": 2305288, "2026": 278471}}, "4": {"mu": 503329, "sigma": 430298, "lower": 0, "upper": 1363924, "por_ano": {"2020": 89738, "2021": 289408, "2022": 524175, "2023": 359742, "2024": 1329271, "2025": 427639, "2026": 232388}}, "5": {"mu": 320813, "sigma": 117345, "lower": 86122, "upper": 555504, "por_ano": {"2020": 113495, "2021": 465847, "2022": 358035, "2023": 318280, "2024": 373736, "2025": 295485, "2026": 753950}}, "6": {"mu": 247597, "sigma": 45324, "lower": 156949, "upper": 338245, "por_ano": {"2020": 219660, "2021": 271808, "2022": 188464, "2023": 268800, "2024": 313652, "2025": 223201, "2026": 1984892}}, "7": {"mu": 301381, "sigma": 108839, "lower": 83703, "upper": 519059, "por_ano": {"2020": 232227, "2021": 189563, "2022": 230768, "2023": 339691, "2024": 328184, "2025": 487854, "2026": 939068}}, "8": {"mu": 276166, "sigma": 75917, "lower": 124332, "upper": 428000, "por_ano": {"2020": 157870, "2021": 247485, "2022": 253156, "2023": 383346, "2024": 305205, "2025": 309933, "2026": 350127}}, "9": {"mu": 255215, "sigma": 94745, "lower": 65725, "upper": 444705, "por_ano": {"2020": 153244, "2021": 280496, "2022": 189972, "2023": 207786, "2024": 281301, "2025": 418492, "2026": 32301}}, "10": {"mu": 299360, "sigma": 99060, "lower": 101241, "upper": 497480, "por_ano": {"2020": 232618, "2021": 293874, "2022": 176619, "2023": 304910, "2024": 318099, "2025": 470042, "2026": null}}, "11": {"mu": 244945, "sigma": 28454, "lower": 188037, "upper": 301853, "por_ano": {"2020": 238220, "2021": 222965, "2022": 270702, "2023": 272109, "2024": 202626, "2025": 263047, "2026": null}}, "12": {"mu": 307999, "sigma": 80158, "lower": 147684, "upper": 468315, "por_ano": {"2020": 171844, "2021": 285861, "2022": 296829, "2023": 321510, "2024": 368234, "2025": 403720, "2026": null}}}, "totais_anuais": {"2020": 3369937, "2021": 4504940, "2022": 5289450, "2023": 5721046, "2024": 5814852, "2025": 6785913, "2026": 5063582}, "trend": [371829, 373354, 374879, 376404, 377929, 379454, 380979, 382504, 384029, 385554, 387079, 388604, 390128, 391653, 393178, 394703, 396228, 397753, 399278, 400803, 402328, 403853, 405378, 406903, 408428, 409953, 411478, 413003, 414528, 416053, 417578, 419103, 420628, 422153, 423678, 425203, 426728, 428253, 429778, 431303, 432828, 434353, 435878, 437403, 438928, 440453, 441978, 443503, 445028, 446553, 448078, 449603, 451128, 452653, 454178, 455703, 457228, 458753, 460278, 461803, 463328, 464853, 466378, 467903, 469428, 470953, 472478, 474003, 475528, 477053, 478578, 480103, 481628, 483153, 484678, 486203, 487728, 489253, 490778, 492303, 493828, 495353, 496878, 498403]}, "MULTA E JUROS": {"serie": {"1": {"2020": 88604, "2021": 164251, "2022": 84273, "2023": 136285, "2024": 138356, "2025": 134980, "2026": 251727}, "2": {"2020": 171449, "2021": 100525, "2022": 83537, "2023": 120816, "2024": 165497, "2025": 212290, "2026": 665499}, "3": {"2020": 107049, "2021": 155713, "2022": 221985, "2023": 255925, "2024": 328314, "2025": 232184, "2026": 351531}, "4": {"2020": 64409, "2021": 93558, "2022": 107525, "2023": 99670, "2024": 211822, "2025": 135296, "2026": 265093}, "5": {"2020": 94842, "2021": 84777, "2022": 96664, "2023": 128368, "2024": 145011, "2025": 139922, "2026": 213705}, "6": {"2020": 148093, "2021": 86670, "2022": 90951, "2023": 142450, "2024": 163128, "2025": 136265, "2026": 625336}, "7": {"2020": 211522, "2021": 149545, "2022": 144684, "2023": 201437, "2024": 199503, "2025": 223849, "2026": 527873}, "8": {"2020": 168659, "2021": 154673, "2022": 188014, "2023": 212058, "2024": 183964, "2025": 424258, "2026": 340605}, "9": {"2020": 242697, "2021": 140398, "2022": 131101, "2023": 165409, "2024": 160678, "2025": 948425, "2026": 14189}, "10": {"2020": 218856, "2021": 120032, "2022": 159678, "2023": 212046, "2024": 212885, "2025": 605718, "2026": null}, "11": {"2020": 116292, "2021": 206040, "2022": 145205, "2023": 166089, "2024": 155947, "2025": 846999, "2026": null}, "12": {"2020": 140186, "2021": 159328, "2022": 201941, "2023": 159461, "2024": 186580, "2025": 527244, "2026": null}}, "stats": {"1": {"mu": 124458, "sigma": 31393, "lower": 61673, "upper": 187244, "por_ano": {"2020": 88604, "2021": 164251, "2022": 84273, "2023": 136285, "2024": 138356, "2025": 134980, "2026": 251727}}, "2": {"mu": 142352, "sigma": 48880, "lower": 44593, "upper": 240111, "por_ano": {"2020": 171449, "2021": 100525, "2022": 83537, "2023": 120816, "2024": 165497, "2025": 212290, "2026": 665499}}, "3": {"mu": 216862, "sigma": 77468, "lower": 61925, "upper": 371798, "por_ano": {"2020": 107049, "2021": 155713, "2022": 221985, "2023": 255925, "2024": 328314, "2025": 232184, "2026": 351531}}, "4": {"mu": 118713, "sigma": 51017, "lower": 16679, "upper": 220747, "por_ano": {"2020": 64409, "2021": 93558, "2022": 107525, "2023": 99670, "2024": 211822, "2025": 135296, "2026": 265093}}, "5": {"mu": 114931, "sigma": 25909, "lower": 63113, "upper": 166749, "por_ano": {"2020": 94842, "2021": 84777, "2022": 96664, "2023": 128368, "2024": 145011, "2025": 139922, "2026": 213705}}, "6": {"mu": 127926, "sigma": 31609, "lower": 64709, "upper": 191144, "por_ano": {"2020": 148093, "2021": 86670, "2022": 90951, "2023": 142450, "2024": 163128, "2025": 136265, "2026": 625336}}, "7": {"mu": 188423, "sigma": 33182, "lower": 122059, "upper": 254788, "por_ano": {"2020": 211522, "2021": 149545, "2022": 144684, "2023": 201437, "2024": 199503, "2025": 223849, "2026": 527873}}, "8": {"mu": 221938, "sigma": 100982, "lower": 19973, "upper": 423902, "por_ano": {"2020": 168659, "2021": 154673, "2022": 188014, "2023": 212058, "2024": 183964, "2025": 424258, "2026": 340605}}, "9": {"mu": 298118, "sigma": 321012, "lower": 0, "upper": 940141, "por_ano": {"2020": 242697, "2021": 140398, "2022": 131101, "2023": 165409, "2024": 160678, "2025": 948425, "2026": 14189}}, "10": {"mu": 254869, "sigma": 176199, "lower": 0, "upper": 607268, "por_ano": {"2020": 218856, "2021": 120032, "2022": 159678, "2023": 212046, "2024": 212885, "2025": 605718, "2026": null}}, "11": {"mu": 272762, "sigma": 282835, "lower": 0, "upper": 838433, "por_ano": {"2020": 116292, "2021": 206040, "2022": 145205, "2023": 166089, "2024": 155947, "2025": 846999, "2026": null}}, "12": {"mu": 229123, "sigma": 147688, "lower": 0, "upper": 524500, "por_ano": {"2020": 140186, "2021": 159328, "2022": 201941, "2023": 159461, "2024": 186580, "2025": 527244, "2026": null}}}, "totais_anuais": {"2020": 1772658, "2021": 1615510, "2022": 1655559, "2023": 2000014, "2024": 2251685, "2025": 4567430, "2026": 3255557}, "trend": [88751, 91523, 94295, 97067, 99839, 102611, 105383, 108155, 110927, 113699, 116471, 119243, 122015, 124787, 127559, 130331, 133103, 135875, 138648, 141420, 144192, 146964, 149736, 152508, 155280, 158052, 160824, 163596, 166368, 169140, 171912, 174684, 177456, 180228, 183000, 185772, 188544, 191316, 194088, 196861, 199633, 202405, 205177, 207949, 210721, 213493, 216265, 219037, 221809, 224581, 227353, 230125, 232897, 235669, 238441, 241213, 243985, 246757, 249529, 252301, 255074, 257846, 260618, 263390, 266162, 268934, 271706, 274478, 277250, 280022, 282794, 285566, 288338, 291110, 293882, 296654, 299426, 302198, 304970, 307742, 310514, 313286, 316059, 318831]}, "OUTRAS RECEITAS": {"serie": {"1": {"2020": 191963, "2021": 61388, "2022": 67792, "2023": 89216, "2024": 99257, "2025": 66513, "2026": 108474}, "2": {"2020": 118328, "2021": 33323, "2022": 36619, "2023": 76997, "2024": 165776, "2025": 72297, "2026": 88524}, "3": {"2020": 34470, "2021": 45888, "2022": 101978, "2023": 106933, "2024": 252309, "2025": 110015, "2026": 135122}, "4": {"2020": 23472, "2021": 76878, "2022": 91156, "2023": 78351, "2024": 130121, "2025": 111120, "2026": 102805}, "5": {"2020": 13256, "2021": 53168, "2022": 52382, "2023": 99716, "2024": 69296, "2025": 103781, "2026": 130505}, "6": {"2020": 82311, "2021": 103823, "2022": 41248, "2023": 62152, "2024": 81015, "2025": 368504, "2026": 168901}, "7": {"2020": 48444, "2021": 21340, "2022": 56436, "2023": 98843, "2024": 62240, "2025": 215249, "2026": 138894}, "8": {"2020": 161585, "2021": 30879, "2022": 49832, "2023": 99681, "2024": 72113, "2025": 85769, "2026": 128540}, "9": {"2020": 48885, "2021": 95783, "2022": 36527, "2023": 65283, "2024": 65880, "2025": 104622, "2026": 4606}, "10": {"2020": 61946, "2021": 198105, "2022": 51463, "2023": 62291, "2024": 88897, "2025": 159418, "2026": null}, "11": {"2020": 38183, "2021": 44129, "2022": 43869, "2023": 76818, "2024": 44483, "2025": 99674, "2026": null}, "12": {"2020": 65458, "2021": 54986, "2022": 49581, "2023": 42952, "2024": 61732, "2025": 111956, "2026": null}}, "stats": {"1": {"mu": 96022, "sigma": 49252, "lower": 0, "upper": 194525, "por_ano": {"2020": 191963, "2021": 61388, "2022": 67792, "2023": 89216, "2024": 99257, "2025": 66513, "2026": 108474}}, "2": {"mu": 83890, "sigma": 50724, "lower": 0, "upper": 185338, "por_ano": {"2020": 118328, "2021": 33323, "2022": 36619, "2023": 76997, "2024": 165776, "2025": 72297, "2026": 88524}}, "3": {"mu": 108599, "sigma": 77626, "lower": 0, "upper": 263851, "por_ano": {"2020": 34470, "2021": 45888, "2022": 101978, "2023": 106933, "2024": 252309, "2025": 110015, "2026": 135122}}, "4": {"mu": 85183, "sigma": 36474, "lower": 12235, "upper": 158131, "por_ano": {"2020": 23472, "2021": 76878, "2022": 91156, "2023": 78351, "2024": 130121, "2025": 111120, "2026": 102805}}, "5": {"mu": 65267, "sigma": 33775, "lower": 0, "upper": 132817, "por_ano": {"2020": 13256, "2021": 53168, "2022": 52382, "2023": 99716, "2024": 69296, "2025": 103781, "2026": 130505}}, "6": {"mu": 123176, "sigma": 122020, "lower": 0, "upper": 367215, "por_ano": {"2020": 82311, "2021": 103823, "2022": 41248, "2023": 62152, "2024": 81015, "2025": 368504, "2026": 168901}}, "7": {"mu": 83759, "sigma": 69094, "lower": 0, "upper": 221947, "por_ano": {"2020": 48444, "2021": 21340, "2022": 56436, "2023": 98843, "2024": 62240, "2025": 215249, "2026": 138894}}, "8": {"mu": 83310, "sigma": 45599, "lower": 0, "upper": 174507, "por_ano": {"2020": 161585, "2021": 30879, "2022": 49832, "2023": 99681, "2024": 72113, "2025": 85769, "2026": 128540}}, "9": {"mu": 69497, "sigma": 26334, "lower": 16828, "upper": 122165, "por_ano": {"2020": 48885, "2021": 95783, "2022": 36527, "2023": 65283, "2024": 65880, "2025": 104622, "2026": 4606}}, "10": {"mu": 103687, "sigma": 60700, "lower": 0, "upper": 225088, "por_ano": {"2020": 61946, "2021": 198105, "2022": 51463, "2023": 62291, "2024": 88897, "2025": 159418, "2026": null}}, "11": {"mu": 57859, "sigma": 24731, "lower": 8397, "upper": 107322, "por_ano": {"2020": 38183, "2021": 44129, "2022": 43869, "2023": 76818, "2024": 44483, "2025": 99674, "2026": null}}, "12": {"mu": 64444, "sigma": 24650, "lower": 15145, "upper": 113744, "por_ano": {"2020": 65458, "2021": 54986, "2022": 49581, "2023": 42952, "2024": 61732, "2025": 111956, "2026": null}}}, "totais_anuais": {"2020": 888302, "2021": 819690, "2022": 678885, "2023": 959233, "2024": 1193120, "2025": 1608920, "2026": 1006372}, "trend": [63667, 64185, 64703, 65221, 65740, 66258, 66776, 67294, 67812, 68331, 68849, 69367, 69885, 70404, 70922, 71440, 71958, 72476, 72995, 73513, 74031, 74549, 75068, 75586, 76104, 76622, 77140, 77659, 78177, 78695, 79213, 79731, 80250, 80768, 81286, 81804, 82323, 82841, 83359, 83877, 84395, 84914, 85432, 85950, 86468, 86987, 87505, 88023, 88541, 89059, 89578, 90096, 90614, 91132, 91651, 92169, 92687, 93205, 93723, 94242, 94760, 95278, 95796, 96315, 96833, 97351, 97869, 98387, 98906, 99424, 99942, 100460, 100979, 101497, 102015, 102533, 103051, 103570, 104088, 104606, 105124, 105642, 106161, 106679]}}, "grupos_ordem": ["ISS", "ITBI", "IPTU", "DÍVIDA ATIVA", "TAXAS", "MULTA E JUROS", "OUTRAS RECEITAS"], "cv_grupos": {"ISS": 34.7, "ITBI": 28.8, "IPTU": 27.3, "DÍVIDA ATIVA": 33.2, "TAXAS": 22.5, "MULTA E JUROS": 48.9, "OUTRAS RECEITAS": 32.5}, "cagr_grupos": {"ISS": 22.27, "ITBI": 21.03, "IPTU": 11.78, "DÍVIDA ATIVA": 17.21, "TAXAS": 15.03, "MULTA E JUROS": 20.84, "OUTRAS RECEITAS": 12.61}, "hhi": {"2020": 2528, "2021": 2809, "2022": 2923, "2023": 3072, "2024": 2920, "2025": 2867, "2026": 2687}, "box_mensal": {"1": {"min": 4574936, "q1": 6562980, "median": 8018269, "q3": 8094501, "max": 8217425, "mean": 7030363, "outliers": [], "vals": [4574936, 6562980, 6714065, 8018269, 8094501, 8217425]}, "2": {"min": 5950952, "q1": 6567867, "median": 8805914, "q3": 9042074, "max": 11764612, "mean": 8367398, "outliers": [], "vals": [5950952, 6567867, 8072972, 8805914, 9042074, 11764612]}, "3": {"min": 3922898, "q1": 9729471, "median": 14259719, "q3": 17817239, "max": 18831447, "mean": 12809294, "outliers": [], "vals": [3922898, 9729471, 12294988, 14259719, 17817239, 18831447]}, "4": {"min": 2410369, "q1": 6239117, "median": 8030337, "q3": 9567786, "max": 15025918, "mean": 7928557, "outliers": [15025918], "vals": [2410369, 6239117, 6297814, 8030337, 9567786, 15025918]}, "5": {"min": 2642113, "q1": 5050270, "median": 8145207, "q3": 8211554, "max": 8427866, "mean": 6436714, "outliers": [], "vals": [2642113, 5050270, 6143275, 8145207, 8211554, 8427866]}, "6": {"min": 3127191, "q1": 4832449, "median": 7373457, "q3": 7634561, "max": 7693331, "mean": 5991988, "outliers": [], "vals": [3127191, 4832449, 5290936, 7373457, 7634561, 7693331]}, "7": {"min": 3682666, "q1": 5037882, "median": 8130673, "q3": 8671998, "max": 9077342, "mean": 6715521, "outliers": [], "vals": [3682666, 5037882, 5692567, 8130673, 8671998, 9077342]}, "8": {"min": 3912091, "q1": 4916870, "median": 7691868, "q3": 8397236, "max": 8986401, "mean": 6582816, "outliers": [], "vals": [3912091, 4916870, 5592430, 7691868, 8397236, 8986401]}, "9": {"min": 4693029, "q1": 5596602, "median": 8202140, "q3": 8551039, "max": 11259047, "mean": 7482339, "outliers": [], "vals": [4693029, 5596602, 6592177, 8202140, 8551039, 11259047]}, "10": {"min": 4950290, "q1": 5977052, "median": 7517349, "q3": 8284432, "max": 11015516, "mean": 7357130, "outliers": [], "vals": [4950290, 5977052, 6398143, 7517349, 8284432, 11015516]}, "11": {"min": 4102392, "q1": 5745429, "median": 7314038, "q3": 7439357, "max": 11052566, "mean": 7025316, "outliers": [11052566], "vals": [4102392, 5745429, 6498111, 7314038, 7439357, 11052566]}, "12": {"min": 4320341, "q1": 5847008, "median": 8222331, "q3": 8539708, "max": 11163139, "mean": 7536588, "outliers": [], "vals": [4320341, 5847008, 7127000, 8222331, 8539708, 11163139]}}, "quebra": {"ano": 2021, "mu_antes": 51380390, "mu_depois": 98412364, "dp_antes": 0, "dp_depois": 18821368, "variacao_pct": 91.5, "score": 91.5}, "matriz_var": {"2020": {"2020": 0.0, "2021": 45.5, "2022": 58.4, "2023": 104.9, "2024": 112.3, "2025": 144.7, "2026": 83.5}, "2021": {"2020": -31.3, "2021": 0.0, "2022": 8.9, "2023": 40.8, "2024": 45.9, "2025": 68.2, "2026": 26.1}, "2022": {"2020": -36.9, "2021": -8.2, "2022": 0.0, "2023": 29.3, "2024": 34.0, "2025": 54.4, "2026": 15.8}, "2023": {"2020": -51.2, "2021": -29.0, "2022": -22.7, "2023": 0.0, "2024": 3.6, "2025": 19.4, "2026": -10.4}, "2024": {"2020": -52.9, "2021": -31.5, "2022": -25.4, "2023": -3.5, "2024": 0.0, "2025": 15.3, "2026": -13.6}, "2025": {"2020": -59.1, "2021": -40.5, "2022": -35.2, "2023": -16.3, "2024": -13.2, "2025": 0.0, "2026": -25.0}, "2026": {"2020": -45.5, "2021": -20.7, "2022": -13.6, "2023": 11.7, "2024": 15.7, "2025": 33.3, "2026": 0.0}}, "cache_ts": "04/09/2026 11:09"};
+const MESES=D.meses,ANOS=D.anos,ANO_AT=D.ano_atual;
+const GC='rgba(255,255,255,.06)',TC='#94A3B8';
+const GCORES={'ISS':'#3B82F6','ITBI':'#10B981','IPTU':'#F59E0B','TAXAS':'#8B5CF6','MULTA E JUROS':'#EF4444','OUTRAS RECEITAS':'#6B7280'};
+const PAL=['#22D3A5','#60A5FA','#FBBF24','#A78BFA','#F87171','#34D399','#FB923C','#818CF8','#E879F9'];
+let charts={};
+let gAtivo=D.grupos_ordem[0];
+
+function fmtM(v,dec=2){
+  if(v==null||v===0)return '—';
+  const a=Math.abs(v);
+  if(a>=1e6)return 'R$ '+(v/1e6).toFixed(dec).replace('.',',')+'M';
+  if(a>=1e3)return 'R$ '+(v/1e3).toFixed(0)+'k';
+  return 'R$ '+Math.round(v);
+}
+function fmtK(v){return v?Math.round(v/1000)+'k':'—'}
+function fmtPct(v,sign=false){if(v==null)return '—';return (sign&&v>0?'+':'')+v.toFixed(1)+'%'}
+function calcZ(v,mu,s){return s&&v!=null?(v-mu)/s:null}
+function heatBg(z){
+  if(z==null)return 'rgba(255,255,255,.04)';
+  if(z>2)return 'rgba(34,211,165,.28)';if(z>1)return 'rgba(34,211,165,.13)';
+  if(z<-2)return 'rgba(248,113,113,.32)';if(z<-1)return 'rgba(248,113,113,.16)';
+  return 'rgba(96,165,250,.1)';
+}
+function varBg(v){
+  if(v==null)return 'rgba(255,255,255,.04)';
+  if(v>20)return 'rgba(34,211,165,.35)';if(v>5)return 'rgba(34,211,165,.18)';
+  if(v<-20)return 'rgba(248,113,113,.35)';if(v<-5)return 'rgba(248,113,113,.18)';
+  return 'rgba(96,165,250,.1)';
+}
+function mkChart(id,type,data,opts){
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
+  return charts[id];
+}
+function baseOpts(extra={}){
+  return {plugins:{legend:{display:false},...(extra.plugins||{})},
+    scales:{x:{grid:{color:GC},ticks:{color:TC}},...(extra.scales||{}),...(extra.y?{y:extra.y}:{y:{grid:{color:GC},ticks:{color:TC}}})},
+    ...extra};
+}
+
+// ── HEATMAP ──────────────────────────────────────────────────
+function renderHeatmap(id,serie,stats,anos){
+  let h='<table class="hm"><thead><tr><th>Ano</th>';
+  MESES.forEach(m=>h+='<th>'+m+'</th>');h+='<th>Total</th></tr></thead><tbody>';
+  anos.forEach(a=>{
+    let tot=0;h+='<tr><td class="rl">'+a+'</td>';
+    for(let m=1;m<=12;m++){
+      const v=(serie[m]||{})[a];const st=stats[m];
+      const z=v&&st?calcZ(v,st.mu,st.sigma):null;
+      h+='<td style="background:'+heatBg(z)+'" title="'+MESES[m-1]+'/'+a+': '+fmtM(v)+'">'+fmtK(v)+'</td>';
+      tot+=v||0;
+    }
+    h+='<td style="font-weight:600;color:'+TC+'">'+fmtK(tot)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById(id).innerHTML=h;
+}
+
+// ── LINHA: um ano ─────────────────────────────────────────────
+function linhaUm(serie,stats,anoRef,cor){
+  const d=MESES.map((_,i)=>{const v=(serie[i+1]||{})[anoRef];return v?Math.round(v/1000):null;});
+  const mu=MESES.map((_,i)=>stats[i+1]?Math.round(stats[i+1].mu/1000):null);
+  const up=MESES.map((_,i)=>stats[i+1]?Math.round(stats[i+1].upper/1000):null);
+  const dn=MESES.map((_,i)=>stats[i+1]?Math.round(Math.max(0,stats[i+1].lower)/1000):null);
+  return {labels:MESES,datasets:[
+    {data:up,borderColor:'transparent',backgroundColor:'rgba(96,165,250,.07)',fill:'+1',pointRadius:0,tension:.4},
+    {data:dn,borderColor:'transparent',fill:false,pointRadius:0,tension:.4},
+    {label:'Média',data:mu,borderColor:'rgba(96,165,250,.45)',borderDash:[5,4],borderWidth:1.5,pointRadius:0,tension:.4,fill:false},
+    {label:String(anoRef),data:d,borderColor:cor,borderWidth:2.5,pointRadius:4,pointBackgroundColor:cor,tension:.35,fill:false,spanGaps:true},
+  ]};
+}
+
+// ── LINHA: todos os anos ──────────────────────────────────────
+function linhaTodos(serie){
+  return {labels:MESES,datasets:ANOS.map((a,i)=>{
+    const cor=PAL[i%PAL.length];
+    return {label:String(a),data:MESES.map((_,m)=>{const v=(serie[m+1]||{})[a];return v?Math.round(v/1000):null;}),
+      borderColor:cor,borderWidth:a===ANO_AT?2.5:1.5,pointRadius:a===ANO_AT?4:2,
+      pointBackgroundColor:cor,tension:.35,fill:false,spanGaps:true,borderDash:a===ANO_AT?[]:[4,3]};
+  })};
+}
+
+function legenda(id,todos){
+  const el=document.getElementById(id);
+  if(!todos){el.innerHTML='';return;}
+  el.innerHTML=ANOS.map((a,i)=>'<span><i style="background:'+PAL[i%PAL.length]+'"></i>'+a+'</span>').join('');
+}
+
+function linhaOpts(filtrar){
+  return baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{
+    label:ctx=>{if(filtrar&&ctx.datasetIndex<2)return null;return ctx.dataset.label+': R$ '+ctx.parsed.y+'k';},
+    filter:ctx=>filtrar?ctx.datasetIndex>=2:true
+  }}},y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}});
+}
+
+// ── DIAGNÓSTICO ───────────────────────────────────────────────
+function renderDiag(tbodyId,stats,anoSel,comFaixa){
+  const tb=document.getElementById(tbodyId);tb.innerHTML='';
+  for(let m=1;m<=12;m++){
+    const s=stats[m];if(!s)continue;
+    const v=anoSel?(s.por_ano&&s.por_ano[String(anoSel)])||null:null;
+    const z=v!=null&&s.sigma>0?calcZ(v,s.mu,s.sigma):null;
+    const cor=z==null?TC:z>2?'#22D3A5':z<-2?'#F87171':'#60A5FA';
+    const status=z==null?'—':z>2?'▲ Acima':z<-2?'▼ Abaixo':'✔ Normal';
+    const bg=z==null?'transparent':z>2?'rgba(34,211,165,.15)':z<-2?'rgba(248,113,113,.15)':'rgba(96,165,250,.1)';
+    const zTxt=z==null?'—':(z>0?'+':'')+z.toFixed(2)+'σ';
+    const tr=document.createElement('tr');
+    const cells=comFaixa?[
+      MESES[m-1],v!=null?fmtM(v):'—',fmtM(s.mu),fmtM(s.sigma),
+      fmtM(s.lower)+' – '+fmtM(s.upper),
+      '<span class="mono" style="color:'+cor+'">'+zTxt+'</span>',
+      '<span class="badge" style="background:'+bg+';color:'+cor+'">'+status+'</span>'
+    ]:[
+      MESES[m-1],v!=null?fmtM(v):'—',fmtM(s.mu),fmtM(s.sigma),
+      '<span class="mono" style="color:'+cor+'">'+zTxt+'</span>',
+      '<span class="badge" style="background:'+bg+';color:'+cor+'">'+status+'</span>'
+    ];
+    tr.innerHTML=cells.map((c,i)=>'<td>'+(i===0?'<b>'+c+'</b>':c)+'</td>').join('');
+    tb.appendChild(tr);
+  }
+}
+
+// ── RESUMO ────────────────────────────────────────────────────
+function renderResumo(){
+  const ta=D.totais_anuais,tr=D.totais_reais;
+  const vat=ta[ANO_AT],vat_r=tr[ANO_AT];
+  const compAt=D.comp[ANO_AT]||{};
+  const vp=compAt.var_pct,vp_r=compAt.var_real;
+  const parcial=D.n_meses_at<12;
+  const labelAno=String(ANO_AT)+(parcial?' ('+D.n_meses_at+'m)':'(completo)');
+  document.getElementById('cards-resumo').innerHTML=[
+    {l:'Último ano',v:String(ANO_AT)+(parcial?' — '+D.n_meses_at+' meses':''),c:'#60A5FA',s:parcial?'Ano parcial':''},
+    {l:'Total nominal',v:fmtM(vat,0),c:'#22D3A5',s:'R$ correntes'},
+    {l:'Total real (2020)',v:fmtM(vat_r,0),c:'#34D399',s:'Deflacionado IPCA'},
+    {l:'Var. vs ano ant.'+(parcial?' (mesmo período)':''),v:vp!=null?fmtPct(vp,true):'—',c:vp!=null&&vp>0?'#22D3A5':'#F87171',s:'Nominal'},
+    {l:'Var. real vs ant.',v:vp_r!=null?fmtPct(vp_r,true):'—',c:vp_r!=null&&vp_r>0?'#22D3A5':'#F87171',s:'Deflacionado'},
+    {l:'CAGR nominal',v:D.cagr_nom!=null?fmtPct(D.cagr_nom,true):'—',c:'#FBBF24',s:'Anos completos'},
+    {l:'CAGR real',v:D.cagr_real!=null?fmtPct(D.cagr_real,true):'—',c:D.cagr_real>0?'#FBBF24':'#F87171',s:'Descontado IPCA'},
+  ].map(c=>`<div class="card"><div class="card-label">${c.l}</div><div class="card-value" style="color:${c.c}">${c.v}</div>${c.s?'<div class="card-sub">'+c.s+'</div>':''}</div>`).join('');
+
+  // barras anuais
+  const tots=ANOS.map(a=>Math.round(ta[a]/1000));
+  const tots_r=ANOS.map(a=>Math.round(tr[a]/1000));
+  mkChart('ch-anual','bar',{labels:ANOS.map(a=>String(a)+(a===ANO_AT&&parcial?' *':'') ),datasets:[
+    {label:'Nominal',data:tots,borderRadius:5,borderWidth:1.5,
+      backgroundColor:ANOS.map(a=>a===ANO_AT?'rgba(34,211,165,.65)':'rgba(96,165,250,.35)'),
+      borderColor:ANOS.map(a=>a===ANO_AT?'#22D3A5':'#60A5FA')},
+    {label:'Real (2020)',data:tots_r,borderRadius:5,borderWidth:1.5,
+      backgroundColor:ANOS.map(a=>a===ANO_AT?'rgba(52,211,153,.35)':'rgba(167,139,250,.3)'),
+      borderColor:ANOS.map(a=>a===ANO_AT?'#34D399':'#A78BFA')},
+  ]},
+    baseOpts({plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': R$ '+ctx.parsed.y+'k'}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+
+  // composição empilhada
+  const dsComp=D.grupos_ordem.map(g=>{
+    const cor=GCORES[g]||'#6B7280';
+    return {label:g,stack:'s',backgroundColor:cor+'BB',borderColor:cor,borderWidth:1,
+      data:ANOS.map(a=>(D.conc[a]||{})[g]||0)};
+  });
+  mkChart('ch-comp','bar',{labels:ANOS.map(String),datasets:dsComp},
+    baseOpts({plugins:{legend:{display:true,position:'bottom',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}}},
+      scales:{x:{stacked:true,grid:{color:GC},ticks:{color:TC}},y:{stacked:true,max:100,grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}}));
+
+  // crescimento %
+  const vares=ANOS.map(a=>D.comp[a]?.var_pct??null);
+  mkChart('ch-cresc','bar',{labels:ANOS.map(String),datasets:[{data:vares,borderRadius:4,borderWidth:1,
+    backgroundColor:vares.map(v=>v==null?'transparent':v>=0?'rgba(34,211,165,.55)':'rgba(248,113,113,.55)'),
+    borderColor:vares.map(v=>v==null?'transparent':v>=0?'#22D3A5':'#F87171')}]},
+    baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtPct(ctx.parsed.y,true)}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}));
+
+  // Nominal vs Real vs IPCA
+  const varesReal=ANOS.map(a=>(D.comp[a]||{}).var_real??null);
+  const ipcas=ANOS.map(a=>D.ipca_anual[String(a)]||null);
+  mkChart('ch-real-nom','bar',{
+    labels:ANOS.map(a=>String(a)+(a===ANO_AT&&parcial?' *':'')),
+    datasets:[
+      {label:'Nominal %',data:vares,borderRadius:4,borderWidth:1,
+        backgroundColor:'rgba(96,165,250,.45)',borderColor:'#60A5FA'},
+      {label:'Real % (defl. IPCA)',data:varesReal,borderRadius:4,borderWidth:1,
+        backgroundColor:varesReal.map(v=>v==null?'transparent':v>=0?'rgba(34,211,153,.5)':'rgba(248,113,113,.5)'),
+        borderColor:varesReal.map(v=>v==null?'transparent':v>=0?'#34D399':'#F87171')},
+      {label:'IPCA %',type:'line',data:ipcas,borderColor:'#FBBF24',borderWidth:2,
+        borderDash:[5,3],pointRadius:4,pointBackgroundColor:'#FBBF24',tension:.3,fill:false},
+    ]},
+    baseOpts({plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmtPct(ctx.parsed.y,true)}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}));
+}
+
+// ── SAZONAL ───────────────────────────────────────────────────
+function renderLinhaSaz(){
+  const sel=document.getElementById('sel-ano-saz').value;
+  const todos=sel==='todos';
+  const data=todos?linhaTodos(D.serie_total):linhaUm(D.serie_total,D.stats_total,parseInt(sel),'#22D3A5');
+  mkChart('ch-saz','line',data,linhaOpts(!todos));
+  legenda('leg-saz',todos);
+}
+function renderDiagSaz(){
+  renderDiag('tb-saz',D.stats_total,document.getElementById('sel-diag-saz').value,true);
+}
+function renderIdxSaz(){
+  const vals=MESES.map((_,i)=>D.idx_saz[String(i+1)]||0);
+  mkChart('ch-idx','bar',{labels:MESES,datasets:[{data:vals,borderRadius:4,borderWidth:1,
+    backgroundColor:'rgba(251,191,36,.5)',borderColor:'#FBBF24'}]},
+    baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(2)+'%'}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}));
+}
+
+// ── COMPARATIVO ───────────────────────────────────────────────
+function renderComp(){
+  const a=parseInt(document.getElementById('sel-ca').value);
+  const b=parseInt(document.getElementById('sel-cb').value);
+  const va=D.totais_anuais[a]||0,vb=D.totais_anuais[b]||0;
+  const dif=vb-va,pct=va?(dif/va*100):null;
+  const positivo=dif>=0;
+  document.getElementById('cards-comp').innerHTML=[
+    {l:String(a),v:fmtM(va,0),c:'#60A5FA'},
+    {l:String(b),v:fmtM(vb,0),c:'#22D3A5'},
+    {l:'Diferença absoluta',v:(positivo?'+':'')+fmtM(dif,0),c:positivo?'#22D3A5':'#F87171'},
+    {l:'Variação',v:fmtPct(pct,true),c:positivo?'#22D3A5':'#F87171'},
+    {l:'CAGR período',v:fmtPct(b>a?((vb/va)**(1/(b-a))-1)*100:null,true),c:'#FBBF24'},
+  ].map(c=>`<div class="card"><div class="card-label">${c.l}</div><div class="card-value" style="color:${c.c}">${c.v}</div></div>`).join('');
+
+  // barras por grupo comparando a vs b
+  const grupos=D.grupos_ordem;
+  const dsA=grupos.map(g=>{let t=0;for(let m=1;m<=12;m++)t+=(D.grupos[g]?.serie[m]||{})[a]||0;return Math.round(t/1000);});
+  const dsB=grupos.map(g=>{let t=0;for(let m=1;m<=12;m++)t+=(D.grupos[g]?.serie[m]||{})[b]||0;return Math.round(t/1000);});
+  mkChart('ch-comp-bar','bar',{labels:grupos,datasets:[
+    {label:String(a),data:dsA,backgroundColor:'rgba(96,165,250,.5)',borderColor:'#60A5FA',borderWidth:1.5,borderRadius:4},
+    {label:String(b),data:dsB,backgroundColor:'rgba(34,211,165,.5)',borderColor:'#22D3A5',borderWidth:1.5,borderRadius:4},
+  ]},baseOpts({plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+}
+
+function renderMatriz(){
+  let h='<table class="mat"><thead><tr><th>Base \ Compar.</th>';
+  ANOS.forEach(a=>h+='<th>'+a+'</th>');h+='</tr></thead><tbody>';
+  ANOS.forEach(a=>{
+    h+='<tr><th>'+a+'</th>';
+    ANOS.forEach(b=>{
+      const v=(D.matriz_var[a]||{})[b];
+      const bg=varBg(v);
+      const txt=v==null?'—':(a===b?'=':fmtPct(v,true));
+      h+='<td style="background:'+bg+';color:'+(v>0?'#22D3A5':v<0?'#F87171':'#94A3B8')+'">'+txt+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('mat-var').innerHTML=h;
+}
+
+// ── CONCENTRAÇÃO ──────────────────────────────────────────────
+function renderConcStack(){
+  const ds=D.grupos_ordem.map(g=>{
+    const cor=GCORES[g]||'#6B7280';
+    return {label:g,stack:'s',backgroundColor:cor+'BB',borderColor:cor,borderWidth:1,
+      data:ANOS.map(a=>(D.conc[a]||{})[g]||0)};
+  });
+  mkChart('ch-conc-stack','bar',{labels:ANOS.map(String),datasets:ds},
+    baseOpts({plugins:{legend:{display:true,position:'bottom',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}}},
+      scales:{x:{stacked:true,grid:{color:GC},ticks:{color:TC}},y:{stacked:true,max:100,grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}}));
+}
+
+function renderConcLinha(){
+  const g=document.getElementById('sel-conc-g').value;
+  const vals=ANOS.map(a=>(D.conc[a]||{})[g]||0);
+  const cor=GCORES[g]||'#60A5FA';
+  mkChart('ch-conc-linha','line',{labels:ANOS.map(String),datasets:[{
+    data:vals,borderColor:cor,borderWidth:2.5,pointRadius:5,pointBackgroundColor:cor,tension:.35,fill:true,
+    backgroundColor:cor+'22'
+  }]},baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'%'}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}));
+}
+
+function renderConcTodos(){
+  const ds=D.grupos_ordem.map(g=>{
+    const cor=GCORES[g]||'#6B7280';
+    const vals=ANOS.map(a=>(D.conc[a]||{})[g]||0);
+    return {
+      label:g,data:vals,
+      borderColor:cor,borderWidth:2,
+      pointRadius:4,pointBackgroundColor:cor,
+      tension:.35,fill:false,
+    };
+  });
+  mkChart('ch-conc-todos','line',{labels:ANOS.map(String),datasets:ds},
+    baseOpts({
+      plugins:{legend:{display:true,position:'bottom',labels:{color:TC,boxWidth:10,padding:14,font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'},min:0}
+    }));
+}
+
+// ── TENDÊNCIA ─────────────────────────────────────────────────
+function renderTend(){
+  // sub-amostra de labels para nao poluir
+  const n=D.labels_flat.length;
+  const step=Math.ceil(n/18);
+  const labels=D.labels_flat.map((l,i)=>i%step===0?l:'');
+  mkChart('ch-tend','line',{labels,datasets:[
+    {label:'Arrecadação mensal',data:D.serie_flat.map(v=>Math.round(v/1000)),
+      borderColor:'rgba(96,165,250,.6)',borderWidth:1.5,pointRadius:0,tension:.3,fill:true,
+      backgroundColor:'rgba(96,165,250,.07)'},
+    {label:'Tendência linear',data:D.trend_line.map(v=>Math.round(v/1000)),
+      borderColor:'#FBBF24',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0,fill:false},
+  ]},baseOpts({plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+
+  // média móvel 12 meses
+  const mm=D.serie_flat.map((_,i)=>{
+    if(i<11)return null;
+    const sl=D.serie_flat.slice(i-11,i+1);
+    return Math.round(sl.reduce((a,b)=>a+b,0)/12/1000);
+  });
+  mkChart('ch-media-mov','line',{labels,datasets:[{
+    label:'Média móvel 12 meses',data:mm,borderColor:'#22D3A5',borderWidth:2.5,
+    pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(34,211,165,.07)',spanGaps:true
+  }]},baseOpts({plugins:{legend:{display:false}},y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+}
+
+// ── PROJEÇÃO ──────────────────────────────────────────────────
+function renderProj(){
+  const real=D.total_realizado,proj=D.proj_anual;
+  const pct=real&&proj?Math.round(real/proj*100):0;
+  document.getElementById('cards-proj').innerHTML=[
+    {l:'Realizado '+ANO_AT,v:fmtM(real,0),c:'#22D3A5'},
+    {l:'Projeção anual',v:fmtM(proj,0),c:'#FBBF24'},
+    {l:'Faltam',v:fmtM(proj-real,0),c:'#60A5FA'},
+    {l:'% concluído',v:pct+'%',c:pct>=80?'#22D3A5':pct>=50?'#FBBF24':'#F87171'},
+    {l:'Meses realizados',v:D.meses_reais.length+'/12',c:'#A78BFA'},
+  ].map(c=>`<div class="card"><div class="card-label">${c.l}</div><div class="card-value" style="color:${c.c}">${c.v}</div></div>`).join('');
+
+  const realData=MESES.map((_,i)=>D.meses_reais.includes(i+1)?Math.round(D.proj_mes[String(i+1)]/1000):null);
+  const projData=MESES.map((_,i)=>!D.meses_reais.includes(i+1)?Math.round(D.proj_mes[String(i+1)]/1000):null);
+  mkChart('ch-proj','bar',{labels:MESES,datasets:[
+    {label:'Realizado',data:realData,backgroundColor:'rgba(34,211,165,.6)',borderColor:'#22D3A5',borderWidth:1.5,borderRadius:4},
+    {label:'Projeção',data:projData,backgroundColor:'rgba(251,191,36,.35)',borderColor:'#FBBF24',borderWidth:1.5,borderRadius:4,borderDash:[4,3]},
+  ]},baseOpts({plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:12,font:{size:11}}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+
+  const tb=document.getElementById('tb-proj');tb.innerHTML='';
+  MESES.forEach((m,i)=>{
+    const real=D.meses_reais.includes(i+1);
+    const v=D.proj_mes[String(i+1)];
+    const tr=document.createElement('tr');
+    const status=real
+      ?'<span class="badge" style="background:rgba(34,211,165,.15);color:#22D3A5">✔ Realizado</span>'
+      :'<span class="badge" style="background:rgba(251,191,36,.15);color:#FBBF24">◉ Estimativa</span>';
+    tr.innerHTML=`<td><b>${m}</b></td><td>${real?fmtM(v):'—'}</td><td>${!real?fmtM(v):'—'}</td><td>${status}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ── GRUPOS ────────────────────────────────────────────────────
+function renderLinhaG(){
+  const sel=document.getElementById('sel-ano-g').value;
+  const todos=sel==='todos';
+  const g=D.grupos[gAtivo];if(!g)return;
+  const cor=GCORES[gAtivo]||'#60A5FA';
+  const data=todos?linhaTodos(g.serie):linhaUm(g.serie,g.stats,parseInt(sel),cor);
+  mkChart('ch-g-linha','line',data,linhaOpts(!todos));
+  legenda('leg-g',todos);
+}
+function renderDiagG(){
+  const g=D.grupos[gAtivo];if(!g)return;
+  renderDiag('tb-g',g.stats,document.getElementById('sel-diag-g').value,false);
+}
+function selecionarGrupo(g){
+  gAtivo=g;
+  document.querySelectorAll('.gtab').forEach(b=>b.classList.toggle('on',b.dataset.g===g));
+  document.getElementById('g-titulo').textContent='Heatmap — '+g+' (R$ mil)';
+  const gd=D.grupos[g];if(!gd)return;
+  renderHeatmap('hm-grupo',gd.serie,gd.stats,ANOS);
+  renderLinhaG();renderDiagG();
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+function pg(btn,id){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');document.getElementById(id).classList.add('on');
+}
+
+// ── ESTATÍSTICAS AVANÇADAS ────────────────────────────────────
+function skew(arr) {
+  const n = arr.length; if (n < 3) return 0;
+  const mu = arr.reduce((a,b)=>a+b,0)/n;
+  const dp = Math.sqrt(arr.reduce((a,b)=>a+(b-mu)**2,0)/n) || 1;
+  return arr.reduce((a,v)=>a+((v-mu)/dp)**3,0)/n;
+}
+
+function renderEstat() {
+  const G = D.grupos_ordem;
+  const GC_MAP = {'ISS':'#3B82F6','ITBI':'#10B981','IPTU':'#F59E0B','TAXAS':'#8B5CF6','MULTA E JUROS':'#EF4444','OUTRAS RECEITAS':'#6B7280'};
+
+  // ── Cards de resumo ──
+  const q = D.quebra;
+  const hhi_at = D.hhi[String(ANO_AT)];
+  const hhi_class = hhi_at > 2500 ? 'Concentrado' : hhi_at > 1500 ? 'Moderado' : 'Diversificado';
+  const hhi_cor = hhi_at > 2500 ? '#F87171' : hhi_at > 1500 ? '#FBBF24' : '#22D3A5';
+  const max_cv_g = G.reduce((a,g)=>((D.cv_grupos[g]||0)>(D.cv_grupos[a]||0)?g:a), G[0]);
+  const min_cv_g = G.reduce((a,g)=>((D.cv_grupos[g]||Infinity)<(D.cv_grupos[a]||Infinity)?g:a), G[0]);
+  document.getElementById('cards-estat').innerHTML = [
+    {l:'HHI '+ANO_AT, v:hhi_at?.toLocaleString('pt-BR')||'—', c:hhi_cor, s:hhi_class},
+    {l:'Mais volátil', v:max_cv_g, c:'#F87171', s:'CV: '+(D.cv_grupos[max_cv_g]||0)+'%'},
+    {l:'Mais estável', v:min_cv_g, c:'#22D3A5', s:'CV: '+(D.cv_grupos[min_cv_g]||0)+'%'},
+    {l:'Quebra estrutural', v:q?String(q.ano):'—', c:'#FBBF24', s:q?fmtPct(q.variacao_pct,true)+' na média':''},
+  ].map(c=>`<div class="card"><div class="card-label">${c.l}</div><div class="card-value" style="color:${c.c}">${c.v}</div>${c.s?'<div class="card-sub">'+c.s+'</div>':''}</div>`).join('');
+
+  // ── CV por grupo ──
+  const cvVals = G.map(g => D.cv_grupos[g]||0);
+  const cvCores = cvVals.map(v => v > 60 ? '#F87171' : v > 30 ? '#FBBF24' : '#22D3A5');
+  mkChart('ch-cv-grupo','bar',{
+    labels: G,
+    datasets:[{data:cvVals, backgroundColor:cvCores.map(c=>c+'88'),
+      borderColor:cvCores, borderWidth:1.5, borderRadius:4,
+      datalabels:{display:false}}]
+  }, baseOpts({
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'%'}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}
+  }));
+
+  // ── CAGR por grupo ──
+  const cagrVals = G.map(g => D.cagr_grupos[g] ?? null);
+  const cagrCores = cagrVals.map(v => v == null ? '#6B7280' : v > 10 ? '#22D3A5' : v > 0 ? '#60A5FA' : '#F87171');
+  mkChart('ch-cagr-grupo','bar',{
+    labels: G,
+    datasets:[{data:cagrVals, backgroundColor:cagrCores.map(c=>c+'88'),
+      borderColor:cagrCores, borderWidth:1.5, borderRadius:4}]
+  }, baseOpts({
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>ctx.parsed.y != null ? fmtPct(ctx.parsed.y,true) : '—'}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}
+  }));
+
+  // ── HHI ao longo dos anos ──
+  const hhiVals = ANOS.map(a => D.hhi[String(a)] || null);
+  mkChart('ch-hhi','line',{
+    labels: ANOS.map(String),
+    datasets:[
+      {label:'HHI', data:hhiVals, borderColor:'#A78BFA', borderWidth:2.5,
+       pointRadius:5, pointBackgroundColor:'#A78BFA', tension:.35,
+       fill:true, backgroundColor:'rgba(167,139,250,.08)'},
+      {data:Array(ANOS.length).fill(2500), borderColor:'#F87171',
+       borderDash:[5,4], borderWidth:1.5, pointRadius:0, label:'Concentrado (2500)', fill:false},
+      {data:Array(ANOS.length).fill(1500), borderColor:'#FBBF24',
+       borderDash:[5,4], borderWidth:1.5, pointRadius:0, label:'Moderado (1500)', fill:false},
+    ]
+  }, baseOpts({
+    plugins:{legend:{display:true,position:'top',labels:{color:TC,boxWidth:10,padding:10,font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>ctx.dataset.label||'HHI'+': '+ctx.parsed.y}}},
+    y:{grid:{color:GC},ticks:{color:TC}}
+  }));
+
+  // ── Quebra estrutural ──
+  if (q) {
+    document.getElementById('quebra-insight').innerHTML =
+      `Ponto de maior mudança detectado em <strong style="color:#FBBF24">${q.ano}</strong>. ` +
+      `Média anual saltou de <strong>${fmtM(q.mu_antes,0)}</strong> para <strong>${fmtM(q.mu_depois,0)}</strong> ` +
+      `(<strong style="color:${q.variacao_pct>0?'#22D3A5':'#F87171'}">${fmtPct(q.variacao_pct,true)}</strong>). ` +
+      `Score de ruptura: ${q.score}%.`;
+    mkChart('ch-quebra-bar','bar',{
+      labels:['Antes de '+q.ano,'A partir de '+q.ano],
+      datasets:[{data:[Math.round(q.mu_antes/1000), Math.round(q.mu_depois/1000)],
+        backgroundColor:['rgba(96,165,250,.5)','rgba(34,211,165,.5)'],
+        borderColor:['#60A5FA','#22D3A5'], borderWidth:1.5, borderRadius:4}]
+    }, baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>fmtM(ctx.parsed.y*1000,0)}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}}));
+    const cv_antes = q.mu_antes ? Math.round(q.dp_antes/q.mu_antes*100) : 0;
+    const cv_depois = q.mu_depois ? Math.round(q.dp_depois/q.mu_depois*100) : 0;
+    mkChart('ch-quebra-cv','bar',{
+      labels:['CV antes','CV depois'],
+      datasets:[{data:[cv_antes, cv_depois],
+        backgroundColor:['rgba(251,191,36,.5)','rgba(167,139,250,.5)'],
+        borderColor:['#FBBF24','#A78BFA'], borderWidth:1.5, borderRadius:4}]
+    }, baseOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+'%'}}},
+      y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'%'}}}));
+  } else {
+    document.getElementById('quebra-insight').textContent = 'Dados insuficientes para detectar quebra estrutural.';
+  }
+
+  // ── Box plot mensal (Chart.js via barras flotantes: [q1, q3] + mediana) ──
+  const bm = D.box_mensal;
+  const q1s = MESES.map((_,i) => Math.round((bm[String(i+1)]?.q1||0)/1000));
+  const q3s = MESES.map((_,i) => Math.round((bm[String(i+1)]?.q3||0)/1000));
+  const meds = MESES.map((_,i) => Math.round((bm[String(i+1)]?.median||0)/1000));
+  const mus  = MESES.map((_,i) => Math.round((bm[String(i+1)]?.mean||0)/1000));
+  const maxs = MESES.map((_,i) => Math.round((bm[String(i+1)]?.max||0)/1000));
+  const mins = MESES.map((_,i) => Math.round((bm[String(i+1)]?.min||0)/1000));
+  // Barras flutuantes IQR [q1, q3]
+  const floatData = MESES.map((_,i) => [q1s[i], q3s[i]]);
+  mkChart('ch-box-mensal','bar',{
+    labels: MESES,
+    datasets:[
+      // IQR (Q1→Q3)
+      {label:'IQR (Q1–Q3)', data:floatData,
+       backgroundColor:'rgba(96,165,250,.35)', borderColor:'#60A5FA',
+       borderWidth:1.5, borderRadius:2, borderSkipped:false},
+      // Min–Max como linha
+      {type:'line', label:'Min', data:mins, borderColor:'rgba(248,113,113,.5)',
+       borderWidth:1.5, pointRadius:4, pointBackgroundColor:'#F87171',
+       tension:0, fill:false, borderDash:[3,3]},
+      {type:'line', label:'Max', data:maxs, borderColor:'rgba(34,211,165,.5)',
+       borderWidth:1.5, pointRadius:4, pointBackgroundColor:'#22D3A5',
+       tension:0, fill:false, borderDash:[3,3]},
+      // Mediana
+      {type:'line', label:'Mediana', data:meds, borderColor:'#FBBF24',
+       borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#FBBF24',
+       tension:.2, fill:false},
+      // Média
+      {type:'line', label:'Média', data:mus, borderColor:'#A78BFA',
+       borderWidth:1.5, pointRadius:3, pointBackgroundColor:'#A78BFA',
+       tension:.2, fill:false, borderDash:[4,3]},
+    ]
+  }, baseOpts({
+    plugins:{legend:{display:true, position:'top',
+      labels:{color:TC, boxWidth:10, padding:12, font:{size:11}}},
+      tooltip:{callbacks:{label:ctx=>{
+        if(ctx.dataset.label==='IQR (Q1–Q3)') return 'Q1: R$'+ctx.parsed._custom?.min+'k · Q3: R$'+ctx.parsed._custom?.max+'k';
+        return ctx.dataset.label+': R$'+ctx.parsed.y+'k';
+      }}}},
+    y:{grid:{color:GC},ticks:{color:TC,callback:v=>v+'k'}}
+  }));
+
+  // ── Skewness por grupo ──
+  const skewVals = G.map(g => {
+    if (!D.grupos[g]) return 0;
+    const serie = D.grupos[g].serie;
+    const flat = [];
+    for (let m=1; m<=12; m++) {
+      ANOS.forEach(a => { const v = (serie[m]||{})[a]; if (v) flat.push(v); });
+    }
+    return parseFloat(skew(flat).toFixed(3));
+  });
+  const skewCores = skewVals.map(v =>
+    Math.abs(v) < 0.5 ? '#22D3A5' : Math.abs(v) < 1 ? '#60A5FA' : Math.abs(v) < 2 ? '#FBBF24' : '#F87171'
+  );
+  mkChart('ch-skew-grupo','bar',{
+    labels: G,
+    datasets:[{data:skewVals, backgroundColor:skewCores.map(c=>c+'88'),
+      borderColor:skewCores, borderWidth:1.5, borderRadius:4}]
+  }, baseOpts({
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>'Skewness: '+ctx.parsed.y}}},
+    y:{grid:{color:GC},ticks:{color:TC}}
+  }));
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+function init(){
+  if(D.cache_ts)document.getElementById('ci').textContent='Dados do cache gerado em '+D.cache_ts;
+
+  // selects de ano
+  ['sel-ano-saz','sel-ano-g'].forEach(id=>{
+    const sel=document.getElementById(id);
+    ANOS.slice().reverse().forEach(a=>{
+      const o=document.createElement('option');o.value=a;o.textContent=a;
+      if(a===ANO_AT)o.selected=true;sel.appendChild(o);
+    });
+  });
+  ['sel-diag-saz','sel-diag-g'].forEach(id=>{
+    const sel=document.getElementById(id);
+    ANOS.slice().reverse().forEach(a=>{
+      const o=document.createElement('option');o.value=a;o.textContent=a;
+      if(a===ANO_AT)o.selected=true;sel.appendChild(o);
+    });
+  });
+  ['sel-ca','sel-cb'].forEach((id,idx)=>{
+    const sel=document.getElementById(id);
+    ANOS.forEach((a,i)=>{
+      const o=document.createElement('option');o.value=a;o.textContent=a;
+      if((idx===0&&i===0)||(idx===1&&a===ANO_AT))o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+
+  // select grupo concentracao
+  const sg=document.getElementById('sel-conc-g');
+  D.grupos_ordem.forEach(g=>{
+    const o=document.createElement('option');o.value=g;o.textContent=g;sg.appendChild(o);
+  });
+
+  // tabs grupo
+  const tabs=document.getElementById('gtabs');
+  D.grupos_ordem.forEach(g=>{
+    const b=document.createElement('button');
+    b.className='gtab'+(g===gAtivo?' on':'');
+    b.dataset.g=g;b.textContent=g;b.onclick=()=>selecionarGrupo(g);
+    tabs.appendChild(b);
+  });
+
+  renderResumo();
+  renderHeatmap('hm-total',D.serie_total,D.stats_total,ANOS);
+  renderLinhaSaz();renderDiagSaz();renderIdxSaz();
+  renderComp();renderMatriz();
+  renderConcStack();renderConcLinha();renderConcTodos();
+  renderTend();
+  renderProj();
+  selecionarGrupo(gAtivo);
+  renderEstat();
+}
+init();
+</script>
+</body>
+</html>
