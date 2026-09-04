@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IPTU — Dashboard Cabedelo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0B0F19;--sur:#111827;--sur2:#1A2234;--bd:#2A3850;
+  --tx:#E2EAF4;--mu:#7B8FAD;--acc:#F59E0B;--bl:#3B82F6;
+  --gn:#10B981;--rd:#EF4444;--r:8px;
+}
+body{background:var(--bg);color:var(--tx);font-family:'Syne',sans-serif;font-size:14px}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#0F1E3D,#1A2E54 50%,#0F1E3D);
+  border-bottom:1px solid var(--bd);padding:1rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+  position:sticky;top:0;z-index:100}
+.hico{width:42px;height:42px;background:var(--acc);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.htx h1{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.02em}
+.htx p{font-size:11px;color:var(--mu);font-family:'DM Mono',monospace;margin-top:1px}
+.hright{margin-left:auto;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.ysel{background:var(--sur2);border:1px solid var(--bd);border-radius:8px;
+  color:var(--tx);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;
+  padding:.4rem .8rem;cursor:pointer;outline:none}
+.ysel:focus{border-color:var(--acc)}
+.tag{background:#10B98120;color:var(--gn);border:1px solid #10B98140;
+  border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;
+  font-family:'DM Mono',monospace}
+
+/* PAGE */
+.page{padding:1.25rem 1.5rem;max-width:1600px;margin:0 auto}
+
+/* KPIs */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));
+  gap:.75rem;margin-bottom:.75rem}
+.kpi{background:var(--sur);border:1px solid var(--bd);border-radius:var(--r);
+  padding:1rem 1.1rem;position:relative;overflow:hidden;
+  transition:transform .15s,border-color .15s}
+.kpi:hover{border-color:var(--acc);transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--kc,var(--acc))}
+.kl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--mu);margin-bottom:.4rem}
+.kv{font-size:1.3rem;font-weight:800;letter-spacing:-.03em;
+  font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ks{font-size:11px;color:var(--mu);margin-top:.25rem}
+.bge{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;
+  border-radius:3px;font-family:'DM Mono',monospace;margin-left:.2rem}
+.bge-gn{background:#10B98115;color:var(--gn);border:1px solid #10B98130}
+.bge-rd{background:#EF444415;color:var(--rd);border:1px solid #EF444430}
+.bge-am{background:#F59E0B15;color:var(--acc);border:1px solid #F59E0B30}
+
+/* CARDS */
+.card{background:var(--sur);border:1px solid var(--bd);border-radius:var(--r);padding:1.1rem}
+.ctitle{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--mu);margin-bottom:.9rem;display:flex;align-items:center;gap:.4rem}
+.ctitle em{color:var(--acc);font-style:normal;font-size:14px}
+.note{display:inline-block;background:var(--sur2);border:1px solid var(--bd);
+  border-radius:4px;font-size:10px;color:var(--mu);padding:2px 7px;margin-left:.5rem}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.g-b{display:grid;grid-template-columns:3fr 2fr;gap:.75rem;margin-bottom:.75rem}
+.mb{margin-bottom:.75rem}
+
+/* CANVAS */
+.cw{position:relative;width:100%}
+.cw canvas{display:block;width:100%!important}
+
+/* DONUT — tamanho quadrado fixo */
+.donut-box{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+.donut-cv{flex:0 0 170px;height:170px;position:relative}
+.donut-leg{flex:1;min-width:130px}
+.dl-item{display:flex;align-items:center;justify-content:space-between;
+  padding:.35rem 0;border-bottom:1px solid var(--bd);font-size:12px}
+.dl-item:last-child{border:none}
+.dl-l{display:flex;align-items:center;gap:.5rem}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dl-r{font-family:'DM Mono',monospace;text-align:right;font-size:11px}
+
+/* TABELA */
+.tbl-wrap{overflow-y:auto;max-height:320px}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--sur2);color:var(--mu);font-size:10px;
+  letter-spacing:.05em;text-transform:uppercase;font-weight:700;
+  padding:.5rem .75rem;text-align:right;position:sticky;top:0}
+.tbl th:first-child{text-align:left}
+.tbl td{padding:.45rem .75rem;text-align:right;border-bottom:1px solid var(--bd)}
+.tbl td:first-child{text-align:left;font-weight:600}
+.tbl tr:hover td{background:var(--sur2)}
+
+/* RESPONSIVO */
+@media(max-width:1100px){.g3,.g-b{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .g2{grid-template-columns:1fr}
+  .donut-cv{flex:0 0 140px;height:140px}
+  header{padding:.75rem 1rem}
+  .page{padding:.75rem 1rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hico">🏠</div>
+  <div class="htx">
+    <h1>IPTU — Painel de Arrecadação</h1>
+    <p>PREFEITURA DE CABEDELO · SIAT / BICABEDELO · 04/09/2026 16:09</p>
+  </div>
+  <div class="hright">
+    <span class="tag">ArrDetalhado</span>
+    <select class="ysel" id="anoSel" onchange="mudarAno(this.value)"></select>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- KPIs arrecadação (atualizam com o ano) -->
+  <div class="kpi-row" id="kpiGrid"></div>
+
+  <!-- Linha multi-ano + barras edif/não edif -->
+  <div class="g3">
+    <div class="card">
+      <div class="ctitle"><em>📈</em> Arrecadação Mensal — Comparativo Multi-Ano</div>
+      <div class="cw" style="height:260px"><canvas id="cLinha"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle"><em>🏗</em> Edificado vs Não Edificado — <span id="lblBarAno"></span></div>
+      <div class="cw" style="height:260px"><canvas id="cBarra"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Donut + KPIs IMOBDados -->
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">
+        <em>📊</em> Situação do Exercício Atual — IMOBDados
+        <span class="note">⚠ sempre exercício atual — não muda com o ano</span>
+      </div>
+      <div class="donut-box">
+        <div class="donut-cv"><canvas id="cDonut"></canvas></div>
+        <div class="donut-leg" id="donutLeg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">
+        <em>🏘</em> Cadastro — IMOBDados
+        <span class="note">exercício atual</span>
+      </div>
+      <div class="kpi-row" id="kpiImob" style="grid-template-columns:1fr 1fr;margin:0"></div>
+    </div>
+  </div>
+
+  <!-- Bairros -->
+  <div class="g-b">
+    <div class="card">
+      <div class="ctitle">
+        <em>📍</em> Top 15 Bairros — Lançado × Pago × Em Aberto
+        <span class="note">exercício atual</span>
+      </div>
+      <div class="cw" style="height:340px"><canvas id="cBairro"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle"><em>📋</em> Tabela de Bairros</div>
+      <div class="tbl-wrap"><table class="tbl" id="tblBairro"></table></div>
+    </div>
+  </div>
+
+  <!-- Inadimplência por bairro -->
+  <div class="card mb">
+    <div class="ctitle">
+      <em>🚨</em> Inadimplência por Bairro — % Em Aberto / Lançado (Top 20)
+      <span class="note">exercício atual · IMOBDados</span>
+    </div>
+    <div class="cw" style="height:340px"><canvas id="cInadim"></canvas></div>
+  </div>
+
+  <!-- Histórico anual -->
+  <div class="card mb">
+    <div class="ctitle"><em>📅</em> Histórico Anual — Total Arrecadado (ArrDetalhado)</div>
+    <div class="cw" style="height:160px"><canvas id="cAnual"></canvas></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+const D = {"anos": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026], "ano_recente": 2026, "meses_labels": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"], "serie_por_ano": {"2016": {"edif": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 525853.46, 217657.89, 165141.39, 78006.85, 57857.24, 45883.69], "nedif": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 86192.07, 38546.8, 31029.93, 20885.9, 16891.85, 13896.63], "total": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 612045.53, 256204.69, 196171.32, 98892.75, 74749.09, 59780.32]}, "2017": {"edif": [0.0, 0.0, 0.0, 0.0, 50293.43, 2991220.09, 421826.47, 229462.54, 88351.3, 61847.85, 50115.24, 27662.13], "nedif": [0.0, 0.0, 0.0, 0.0, 16881.71, 789976.56, 100014.56, 43972.58, 25050.88, 10199.96, 5337.37, 2033.14], "total": [0.0, 0.0, 0.0, 0.0, 67175.14, 3781196.65, 521841.03, 273435.12, 113402.18, 72047.81, 55452.61, 29695.27]}, "2018": {"edif": [6302.96, 28666.85, 116970.95, 852769.6, 68563.32, 113057.63, 2736544.64, 289862.81, 95915.18, 78508.24, 46534.12, 45918.64], "nedif": [5478.7, 10402.51, 38207.23, 231189.21, 15971.34, 33218.77, 628957.5, 43050.55, 13825.77, 14421.23, 9980.69, 19221.46], "total": [11781.66, 39069.36, 155178.18, 1083958.81, 84534.66, 146276.4, 3365502.14, 332913.36, 109740.95, 92929.47, 56514.81, 65140.1]}, "2019": {"edif": [52868.18, 2438269.75, 591987.61, 309485.19, 304433.65, 390046.31, 634346.58, 99533.44, 75953.14, 67722.18, 24607.98, 17523.65], "nedif": [19378.79, 636923.07, 109567.39, 74756.88, 57499.86, 82637.5, 138810.85, 40903.02, 22658.35, 16068.09, 6758.71, 7853.78], "total": [72246.97, 3075192.82, 701555.0, 384242.07, 361933.51, 472683.81, 773157.43, 140436.46, 98611.49, 83790.27, 31366.69, 25377.43]}, "2020": {"edif": [108322.99, 3606231.23, 484743.56, 205493.82, 201436.11, 211233.3, 255626.55, 101524.26, 113818.5, 98119.5, 73121.0, 88950.39], "nedif": [32434.52, 810400.53, 103964.96, 30494.18, 45519.25, 40147.52, 91772.9, 33883.48, 30748.82, 27575.78, 13847.74, 22829.65], "total": [140757.51, 4416631.76, 588708.52, 235988.0, 246955.36, 251380.82, 347399.45, 135407.74, 144567.32, 125695.28, 86968.74, 111780.04]}, "2021": {"edif": [162865.84, 1828102.9, 3031618.46, 408972.2, 217915.41, 236157.27, 197805.32, 124741.9, 72593.97, 69330.11, 52657.11, 63392.85], "nedif": [42828.59, 472900.63, 604055.66, 60964.85, 63643.0, 42234.24, 40951.18, 61583.89, 31000.39, 8934.72, 28624.23, 12280.51], "total": [205694.43, 2301003.53, 3635674.12, 469937.05, 281558.41, 278391.51, 238756.5, 186325.79, 103594.36, 78264.83, 81281.34, 75673.36]}, "2022": {"edif": [187234.74, 412686.65, 5470444.28, 441249.85, 325672.76, 258093.28, 237073.31, 147414.44, 69707.01, 52224.14, 58018.66, 80760.52], "nedif": [23502.68, 80659.45, 1149927.38, 84730.28, 80059.94, 36029.33, 27805.28, 39110.77, 28076.24, 13169.1, 9092.58, 10299.02], "total": [210737.42, 493346.1, 6620371.66, 525980.13, 405732.7, 294122.61, 264878.59, 186525.21, 97783.25, 65393.24, 67111.24, 91059.54]}, "2023": {"edif": [336257.97, 490125.0, 6423196.19, 481193.54, 354056.13, 306043.65, 290527.42, 219491.79, 69038.75, 86751.05, 80697.83, 55707.86], "nedif": [71106.05, 109131.88, 1782851.52, 125083.4, 125238.71, 106532.28, 98578.35, 47325.21, 23765.62, 21880.06, 26369.37, 85875.17], "total": [407364.02, 599256.88, 8206047.71, 606276.94, 479294.84, 412575.93, 389105.77, 266817.0, 92804.37, 108631.11, 107067.2, 141583.03]}, "2024": {"edif": [482945.75, 1034632.41, 2525883.24, 4538291.24, 548548.24, 224570.81, 478822.25, 154227.83, 91094.26, 93088.2, 75452.1, 93562.74], "nedif": [107418.8, 247851.26, 1051021.71, 1853421.2, 225886.81, 161248.08, 163797.7, 95114.67, 50440.22, 56262.57, 23675.31, 16138.01], "total": [590364.55, 1282483.67, 3576904.95, 6391712.44, 774435.05, 385818.89, 642619.95, 249342.5, 141534.48, 149350.77, 99127.41, 109700.75]}, "2025": {"edif": [454307.79, 1131832.22, 7547997.85, 598634.38, 421964.38, 371766.18, 370623.05, 211682.33, 143207.51, 107293.53, 71180.61, 84788.8], "nedif": [13888.33, 17305.36, 176773.71, 25951.66, 18076.36, 20678.47, 24136.84, 29757.54, 23541.03, 44456.78, 5391.32, 6057.0], "total": [468196.12, 1149137.58, 7724771.56, 624586.04, 440040.74, 392444.65, 394759.89, 241439.87, 166748.54, 151750.31, 76571.93, 90845.8]}, "2026": {"edif": [0.0, 0.0, 0.0, 0.0, 1741830.38, 6614450.54, 2020147.64, 412648.36, 24674.24, 0.0, 0.0, 0.0], "nedif": [0.0, 0.0, 0.0, 0.0, 169847.42, 1031303.54, 258245.95, 55359.81, 6647.02, 0.0, 0.0, 0.0], "total": [0.0, 0.0, 0.0, 0.0, 1911677.8, 7645754.08, 2278393.59, 468008.17, 31321.26, 0.0, 0.0, 0.0]}}, "totais_anuais": {"2016": 1297843.7, "2017": 4914245.81, "2018": 5543539.9, "2019": 6220593.95, "2020": 6832240.54, "2021": 7936155.23, "2022": 9323041.69, "2023": 11816824.8, "2024": 14393395.41, "2025": 11921293.03, "2026": 12335154.9}, "imob": {"lancado": 21675850.31, "pago": 12317387.94, "aberto": 6451110.97, "total": 45783, "predial": 34506, "territ": 11277, "taxa_inadimp": 29.8, "taxa_arrec": 56.8}, "bairros": {"labels": ["INTERMARES", "PONTA DE CAMPINA", "CAMBOINHA", "POÇO", "PORTAL DO POÇO", "AREIA DOURADA", "PARQUE ESPERANÇA", "AMAZÔNIA PARK", "PARQUE VERDE", "MORADA NOVA", "JARDIM CAMBOINHA", "RECANTO DO POÇO", "PONTA DE MATOS", "JARDIM AMÉRICA", "RENASCER"], "lan": [7786737.09, 2925784.83, 1794094.46, 1552347.16, 971722.74, 645759.57, 616580.7, 595033.07, 539559.46, 481868.53, 478076.39, 445946.35, 443418.97, 437195.87, 421580.44], "pgo": [4827337.51, 1621569.92, 1068411.7, 898760.56, 233179.84, 401042.36, 400622.74, 319120.65, 374465.27, 218359.7, 241954.88, 252522.58, 253445.87, 262375.77, 215548.74], "abt": [1872799.34, 823585.07, 481098.18, 445310.37, 684844.24, 153414.22, 117877.56, 204098.77, 87317.39, 218996.42, 180715.05, 134979.2, 131155.79, 113969.33, 156553.2], "qtd": [10328, 3724, 2522, 3206, 2279, 472, 731, 1333, 684, 349, 1837, 2635, 2048, 683, 2332]}, "inadim": [{"b": "BAIRRO DESCONHECIDO", "pct": 100.0, "lan": 10547.17, "abt": 10547.17}, {"b": "SALINAS RIBAMAR", "pct": 100.0, "lan": 1850.2, "abt": 1850.2}, {"b": "ILHA DA RESTINGA", "pct": 99.6, "lan": 13019.01, "abt": 12972.2}, {"b": "PORTAL DO POÇO", "pct": 70.5, "lan": 971722.74, "abt": 684844.24}, {"b": "JACARÉ", "pct": 56.9, "lan": 347995.46, "abt": 197909.38}, {"b": "CENTRO", "pct": 54.0, "lan": 252269.56, "abt": 136338.47}, {"b": "JARDIM MANGUINHOS", "pct": 53.1, "lan": 16212.64, "abt": 8610.16}, {"b": "MORADA NOVA", "pct": 45.4, "lan": 481868.53, "abt": 218996.42}, {"b": "JARDIM CAMBOINHA", "pct": 37.8, "lan": 478076.39, "abt": 180715.05}, {"b": "RENASCER", "pct": 37.1, "lan": 421580.44, "abt": 156553.2}, {"b": "JARDIM BRASÍLIA", "pct": 36.3, "lan": 180095.92, "abt": 65396.4}, {"b": "CAMALAÚ", "pct": 35.7, "lan": 136621.52, "abt": 48801.03}, {"b": "AMAZÔNIA PARK", "pct": 34.3, "lan": 595033.07, "abt": 204098.77}, {"b": "MONTE CASTELO", "pct": 31.1, "lan": 146657.63, "abt": 45623.79}, {"b": "FORMOSA", "pct": 30.7, "lan": 195525.91, "abt": 60034.76}, {"b": "RECANTO DO POÇO", "pct": 30.3, "lan": 445946.35, "abt": 134979.2}, {"b": "PONTA DE MATOS", "pct": 29.6, "lan": 443418.97, "abt": 131155.79}, {"b": "POÇO", "pct": 28.7, "lan": 1552347.16, "abt": 445310.37}, {"b": "PONTA DE CAMPINA", "pct": 28.1, "lan": 2925784.83, "abt": 823585.07}, {"b": "CAMBOINHA", "pct": 26.8, "lan": 1794094.46, "abt": 481098.18}], "gerado_em": "04/09/2026 16:09"};
+
+// ── PALETA — 12 cores distintas para até 12 anos ──────────────────────────────
+const PAL = [
+  '#3B82F6', // azul
+  '#F59E0B', // âmbar
+  '#10B981', // verde
+  '#EF4444', // vermelho
+  '#A78BFA', // violeta
+  '#06B6D4', // ciano
+  '#F97316', // laranja
+  '#84CC16', // lima
+  '#EC4899', // rosa
+  '#14B8A6', // teal
+  '#FACC15', // amarelo
+  '#6366F1', // índigo
+];
+
+const MU   = '#7B8FAD';
+const GRID = {color:'#2A385033',drawBorder:false};
+const TICK = {color:MU,font:{size:11,family:"'Syne',sans-serif"}};
+const TT   = {
+    backgroundColor:'#1A2234',titleColor:'#E2EAF4',bodyColor:'#A8B9D0',
+    borderColor:'#2A3850',borderWidth:1,padding:10,cornerRadius:8,
+};
+
+Chart.defaults.color = MU;
+Chart.defaults.font.family = "'Syne',sans-serif";
+
+const fBRL = (v,s=false) => {
+    if (s) {
+        if (Math.abs(v)>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'M';
+        if (Math.abs(v)>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K';
+    }
+    return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+};
+const fN   = v => Number(v).toLocaleString('pt-BR');
+const fPct = v => Number(v).toFixed(1)+'%';
+
+let charts = {}, anoAtual = D.ano_recente;
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+    // Popula select de anos
+    const sel = document.getElementById('anoSel');
+    [...D.anos].reverse().forEach(a => {
+        const o = document.createElement('option');
+        o.value = a; o.text = a;
+        if (a === anoAtual) o.selected = true;
+        sel.appendChild(o);
+    });
+    renderKPI(anoAtual);
+    renderKPIImob();
+    renderDonut();
+    renderLinha();
+    renderBarra(anoAtual);
+    renderAnual();
+    renderBairros();
+    renderTblBairros();
+    renderInadim();
+}
+
+function mudarAno(a) {
+    anoAtual = parseInt(a);
+    renderKPI(anoAtual);
+    renderBarra(anoAtual);
+    // IMOBDados NÃO atualiza — é sempre exercício atual do banco
+}
+
+// ── KPI ARRECADAÇÃO ───────────────────────────────────────────────────────────
+function renderKPI(ano) {
+    const s   = D.serie_por_ano[ano] || {edif:[],nedif:[],total:[]};
+    const tot = s.total.reduce((a,b)=>a+b, 0);
+    const edif  = s.edif.reduce((a,b)=>a+b, 0);
+    const nedif = s.nedif.reduce((a,b)=>a+b, 0);
+    const totAnt = D.totais_anuais[ano-1] || 0;
+    const vp = totAnt > 0 ? ((tot-totAnt)/totAnt*100) : null;
+    let maxV=-1, maxM='';
+    D.meses_labels.forEach((ml,i) => { if ((s.total[i]||0)>maxV){maxV=s.total[i]||0;maxM=ml;} });
+
+    document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi" style="--kc:#F59E0B">
+        <div class="kl">Total Arrecadado ${ano}</div>
+        <div class="kv">${fBRL(tot,true)}</div>
+        <div class="ks">${fBRL(tot)}
+          ${vp!=null?`<span class="bge ${vp>=0?'bge-gn':'bge-rd'}">${vp>=0?'▲':'▼'}${Math.abs(vp).toFixed(1)}% vs ${ano-1}</span>`:''}</div>
+    </div>
+    <div class="kpi" style="--kc:#3B82F6">
+        <div class="kl">IPTU Edificado ${ano}</div>
+        <div class="kv">${fBRL(edif,true)}</div>
+        <div class="ks">${tot>0?fPct(edif/tot*100):'-'} do total</div>
+    </div>
+    <div class="kpi" style="--kc:#F59E0B">
+        <div class="kl">IPTU Não Edificado ${ano}</div>
+        <div class="kv">${fBRL(nedif,true)}</div>
+        <div class="ks">${tot>0?fPct(nedif/tot*100):'-'} do total</div>
+    </div>
+    <div class="kpi" style="--kc:#10B981">
+        <div class="kl">Melhor Mês ${ano}</div>
+        <div class="kv">${maxM||'—'}</div>
+        <div class="ks">${fBRL(maxV,true)}</div>
+    </div>
+    <div class="kpi" style="--kc:#A78BFA">
+        <div class="kl">Meses com Pgto. ${ano}</div>
+        <div class="kv">${s.total.filter(v=>v>0).length}<small style="font-size:.85rem"> /12</small></div>
+        <div class="ks">meses com arrecadação</div>
+    </div>`;
+}
+
+// ── KPI IMOB (exercício atual — fixo) ─────────────────────────────────────────
+function renderKPIImob() {
+    const im = D.imob;
+    document.getElementById('kpiImob').innerHTML = `
+    <div class="kpi" style="--kc:#10B981">
+        <div class="kl">Lançado</div>
+        <div class="kv">${fBRL(im.lancado,true)}</div>
+        <div class="ks">Exercício atual</div>
+    </div>
+    <div class="kpi" style="--kc:#10B981">
+        <div class="kl">Pago</div>
+        <div class="kv">${fBRL(im.pago,true)}</div>
+        <div class="ks"><span class="bge bge-gn">${fPct(im.taxa_arrec)}</span></div>
+    </div>
+    <div class="kpi" style="--kc:#EF4444">
+        <div class="kl">Em Aberto</div>
+        <div class="kv">${fBRL(im.aberto,true)}</div>
+        <div class="ks"><span class="bge bge-rd">${fPct(im.taxa_inadimp)} inadimp.</span></div>
+    </div>
+    <div class="kpi" style="--kc:#7B8FAD">
+        <div class="kl">Total de Imóveis</div>
+        <div class="kv">${fN(im.total)}</div>
+        <div class="ks">no cadastro</div>
+    </div>
+    <div class="kpi" style="--kc:#3B82F6">
+        <div class="kl">Predial</div>
+        <div class="kv">${fN(im.predial)}</div>
+        <div class="ks">imóveis edificados</div>
+    </div>
+    <div class="kpi" style="--kc:#F59E0B">
+        <div class="kl">Territorial</div>
+        <div class="kv">${fN(im.territ)}</div>
+        <div class="ks">imóveis não edificados</div>
+    </div>`;
+}
+
+// ── DONUT (exercício atual — fixo) ────────────────────────────────────────────
+function renderDonut() {
+    const im = D.imob;
+    if (charts.donut) charts.donut.destroy();
+    charts.donut = new Chart(document.getElementById('cDonut'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Pago','Em Aberto'],
+            datasets: [{data:[im.pago,im.aberto], backgroundColor:['#10B981','#EF4444'],
+                        borderWidth:0, hoverOffset:4}]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false, cutout:'70%',
+            plugins: {
+                legend: {display:false},
+                tooltip: {...TT, callbacks:{label:c=>' '+c.label+': '+fBRL(c.parsed)}}
+            }
+        }
+    });
+    const tot = im.pago + im.aberto;
+    document.getElementById('donutLeg').innerHTML =
+        [['Pago','#10B981',im.pago],['Em Aberto','#EF4444',im.aberto]]
+        .map(([l,c,v]) => `<div class="dl-item">
+            <div class="dl-l"><div class="dot" style="background:${c}"></div>${l}</div>
+            <div class="dl-r" style="color:${c}">${tot>0?fPct(v/tot*100):'0%'}<br>
+            <small style="color:${MU}">${fBRL(v,true)}</small></div></div>`).join('') +
+        `<div class="dl-item">
+            <div class="dl-l"><div class="dot" style="background:#6B7280"></div>Lançado total</div>
+            <div class="dl-r">${fBRL(im.lancado,true)}</div></div>`;
+}
+
+// ── LINHA MULTI-ANO ───────────────────────────────────────────────────────────
+function renderLinha() {
+    // Gera PAL com cores únicas — uma por ano, sem repetição
+    const n = D.anos.length;
+    const ds = D.anos.map((a, i) => {
+        // Distribui as cores uniformemente no array PAL
+        const ci = Math.round(i * (PAL.length - 1) / Math.max(n - 1, 1));
+        const cor = PAL[ci];
+        return {
+            label: String(a),
+            data: (D.serie_por_ano[a]||{total:[]}).total,
+            borderColor: cor,
+            backgroundColor: cor + '18',
+            borderWidth: a === anoAtual ? 2.5 : 1.5,
+            tension: 0.4,
+            pointRadius: a === anoAtual ? 4 : 2,
+            fill: a === anoAtual,
+        };
+    });
+    if (charts.linha) charts.linha.destroy();
+    charts.linha = new Chart(document.getElementById('cLinha'), {
+        type: 'line',
+        data: {labels: D.meses_labels, datasets: ds},
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            interaction: {mode:'index', intersect:false},
+            plugins: {
+                legend: {labels:{boxWidth:12,font:{size:11}}},
+                tooltip: {...TT, callbacks:{label:c=>' '+c.dataset.label+': '+fBRL(c.parsed.y)}}
+            },
+            scales: {
+                x: {grid:GRID, ticks:TICK},
+                y: {grid:GRID, ticks:{...TICK, callback:v=>fBRL(v,true)}}
+            }
+        }
+    });
+}
+
+// ── BARRAS EDIFICADO × NÃO EDIFICADO ─────────────────────────────────────────
+function renderBarra(ano) {
+    document.getElementById('lblBarAno').textContent = ano;
+    const s = D.serie_por_ano[ano] || {edif:[], nedif:[]};
+    if (charts.barra) charts.barra.destroy();
+    charts.barra = new Chart(document.getElementById('cBarra'), {
+        type: 'bar',
+        data: {
+            labels: D.meses_labels,
+            datasets: [
+                {label:'Edificado',     data:s.edif,  backgroundColor:'#3B82F6CC'},
+                {label:'Não Edificado', data:s.nedif, backgroundColor:'#F59E0BCC'},
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins: {legend:{labels:{boxWidth:12,font:{size:11}}}, tooltip:{...TT}},
+            scales: {
+                x: {stacked:true, grid:GRID, ticks:TICK},
+                y: {stacked:true, grid:GRID, ticks:{...TICK, callback:v=>fBRL(v,true)}}
+            }
+        }
+    });
+}
+
+// ── ANUAL ─────────────────────────────────────────────────────────────────────
+function renderAnual() {
+    const anos = Object.keys(D.totais_anuais).map(Number).sort((a,b)=>a-b);
+    if (charts.anual) charts.anual.destroy();
+    charts.anual = new Chart(document.getElementById('cAnual'), {
+        type: 'bar',
+        data: {
+            labels: anos.map(String),
+            datasets: [{
+                label:'Total arrecadado', data: anos.map(a=>D.totais_anuais[a]),
+                borderRadius:4,
+                backgroundColor: anos.map(a => a===anoAtual ? '#10B981DD' : '#3B82F680')
+            }]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins: {legend:{display:false}, tooltip:{...TT}},
+            scales: {
+                x: {grid:GRID, ticks:TICK},
+                y: {grid:GRID, ticks:{...TICK, callback:v=>fBRL(v,true)}}
+            }
+        }
+    });
+}
+
+// ── BAIRROS ───────────────────────────────────────────────────────────────────
+function renderBairros() {
+    const b = D.bairros;
+    if (charts.bairro) charts.bairro.destroy();
+    charts.bairro = new Chart(document.getElementById('cBairro'), {
+        type: 'bar',
+        data: {
+            labels: b.labels,
+            datasets: [
+                {label:'Lançado',   data:b.lan, backgroundColor:'#3B82F699'},
+                {label:'Pago',      data:b.pgo, backgroundColor:'#10B98199'},
+                {label:'Em Aberto', data:b.abt, backgroundColor:'#EF444499'},
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false, indexAxis:'y',
+            plugins: {legend:{labels:{boxWidth:12,font:{size:11}}}, tooltip:{...TT}},
+            scales: {
+                x: {grid:GRID, ticks:{...TICK, callback:v=>fBRL(v,true)}},
+                y: {grid:{color:'#2A385033'}, ticks:{...TICK, font:{size:10}}}
+            }
+        }
+    });
+}
+
+function renderTblBairros() {
+    const b = D.bairros;
+    let h = `<thead><tr>
+        <th style="text-align:left">Bairro</th>
+        <th>Lançado</th><th>Pago</th><th>Em Aberto</th><th>%Pago</th>
+    </tr></thead><tbody>`;
+    b.labels.forEach((l,i) => {
+        const pct = b.lan[i] > 0 ? b.pgo[i]/b.lan[i]*100 : 0;
+        const cc  = pct>=80?'#10B981':pct>=50?'#F59E0B':'#EF4444';
+        h += `<tr>
+            <td>${l}</td>
+            <td>${fBRL(b.lan[i],true)}</td>
+            <td style="color:#10B981">${fBRL(b.pgo[i],true)}</td>
+            <td style="color:#EF4444">${fBRL(b.abt[i],true)}</td>
+            <td style="color:${cc};font-family:'DM Mono',monospace;font-weight:700">${fPct(pct)}</td>
+        </tr>`;
+    });
+    document.getElementById('tblBairro').innerHTML = h + '</tbody>';
+}
+
+// ── INADIMPLÊNCIA POR BAIRRO ──────────────────────────────────────────────────
+function renderInadim() {
+    const d = D.inadim;
+    const labels = d.map(x => x.b);
+    const pcts   = d.map(x => x.pct);
+    if (charts.inadim) charts.inadim.destroy();
+    charts.inadim = new Chart(document.getElementById('cInadim'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: '% Inadimplência',
+                data: pcts,
+                backgroundColor: pcts.map(p => p>80?'#EF4444CC':p>50?'#F59E0BCC':'#10B981CC'),
+                borderRadius: 3,
+            }]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false, indexAxis:'y',
+            plugins: {
+                legend: {display:false},
+                tooltip: {...TT, callbacks:{
+                    label: c => ` Inadimplência: ${fPct(c.parsed.x)}`,
+                    afterLabel: c => {
+                        const item = d[c.dataIndex];
+                        return [`Lançado: ${fBRL(item.lan,true)}`, `Em Aberto: ${fBRL(item.abt,true)}`];
+                    }
+                }}
+            },
+            scales: {
+                x: {grid:GRID, ticks:{...TICK, callback:v=>fPct(v)}, max:100},
+                y: {grid:{color:'#2A385033'}, ticks:{...TICK, font:{size:10}}}
+            }
+        }
+    });
+}
+
+// ── START ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
